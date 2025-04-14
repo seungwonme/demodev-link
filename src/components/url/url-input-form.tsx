@@ -25,6 +25,7 @@ export function UrlInputForm({ onSuccess, onError }: Props) {
       onSuccess(result.shortUrl);
     } catch (error) {
       onError("URL을 단축하는 중 오류가 발생했습니다.");
+      console.error("URL 단축 오류:", error);
     } finally {
       setIsLoading(false);
     }

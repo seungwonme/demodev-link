@@ -12,13 +12,11 @@ type LinkType = {
 import { notFound, redirect } from "next/navigation";
 
 interface Props {
-  params: {
-    slug: string;
-  };
+  params: Promise<{ slug: string }>;
 }
 
 export default async function RedirectPage({ params }: Props) {
-  const { slug } = params; // await 제거
+  const { slug } = await params; // await 제거
 
   let link: LinkType | null = null; // link 변수를 try 블록 외부에서 접근 가능하도록 선언
 
@@ -58,10 +56,10 @@ export default async function RedirectPage({ params }: Props) {
 
 // 메타데이터 설정 (수정)
 export async function generateMetadata({ params }: Props) {
-  const { slug } = params; // await 제거
+  const { slug } = await params; // await 제거
   // 메타데이터 생성 시에도 링크 정보를 가져와 활용할 수 있습니다.
   // try-catch를 사용하여 링크 조회 실패 시 기본값 제공 가능
-  let title = `리다이렉션 중... - ${slug}`;
+  const title = `리다이렉션 중... - ${slug}`;
   // try {
   //   const link = await LinkService.getLinkBySlug(slug);
   //   if (link) {
