@@ -264,7 +264,7 @@ pnpm create jest@latest
 
 - 데이터베이스는 Supabase를 사용해야 하며 `@supabase/supabase-js`를 사용해야 합니다.
 - 사용자 인증은 Supabase Auth를 사용해야 하며 `@supabase/ssr`를 사용해야 합니다.
-- 클라이언트 파일은 [`utils/supabase` 폴더에 넣어야 합니다.](https://supabase.com/docs/guides/getting-started/tutorials/with-nextjs)
+- 클라이언트 파일은 [`src/libs/supabase` 폴더에 넣어야 합니다.](https://supabase.com/docs/guides/getting-started/tutorials/with-nextjs)
 
 ## Cursor Convention
 
