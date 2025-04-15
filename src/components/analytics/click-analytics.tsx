@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { supabase } from "@/libs/supabase";
+import { useTheme } from "next-themes";
 
 interface ClickData {
   slug: string;
@@ -21,6 +22,9 @@ interface ClickData {
 export default function ClickAnalytics() {
   const [data, setData] = useState<ClickData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
+
+  const isDark = theme === "dark";
 
   useEffect(() => {
     async function fetchClickData() {
@@ -43,45 +47,48 @@ export default function ClickAnalytics() {
   }, []);
 
   if (loading) {
-    return <div className="text-center">데이터를 불러오는 중...</div>;
+    return (
+      <div className="text-center text-muted-foreground">
+        데이터를 불러오는 중...
+      </div>
+    );
   }
 
   return (
-    <div className="w-full h-[400px] p-4 bg-white rounded-lg shadow-sm border border-neutral-200">
-      <h2 className="text-2xl font-bold mb-4 text-neutral-900">
-        상위 10개 링크 클릭 수
-      </h2>
+    <div className="w-full h-[400px] rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
+      <h2 className="mb-4 text-2xl font-bold">상위 10개 링크 클릭 수</h2>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={isDark ? "#2D3748" : "#e5e5e5"}
+          />
           <XAxis
             dataKey="slug"
-            tick={{ fontSize: 12, fill: "#171717" }}
+            tick={{ fontSize: 12, fill: isDark ? "#E2E8F0" : "#171717" }}
             interval={0}
             angle={-45}
             textAnchor="end"
           />
-          <YAxis tick={{ fill: "#171717" }} />
+          <YAxis tick={{ fill: isDark ? "#E2E8F0" : "#171717" }} />
           <Tooltip
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
                 const data = payload[0].payload as ClickData;
                 return (
-                  <div className="bg-white border border-neutral-200 rounded shadow-sm p-2">
-                    <p className="font-bold text-neutral-900">{data.slug}</p>
-                    <p className="text-sm text-neutral-600">
+                  <div className="rounded border bg-popover p-2 shadow-sm text-popover-foreground">
+                    <p className="font-bold">{data.slug}</p>
+                    <p className="text-sm text-muted-foreground">
                       {data.original_url}
                     </p>
-                    <p className="text-neutral-900">
-                      클릭 수: {data.click_count}
-                    </p>
+                    <p>클릭 수: {data.click_count}</p>
                   </div>
                 );
               }
               return null;
             }}
           />
-          <Bar dataKey="click_count" fill="#4F46E5" />
+          <Bar dataKey="click_count" fill={isDark ? "#818CF8" : "#4F46E5"} />
         </BarChart>
       </ResponsiveContainer>
     </div>

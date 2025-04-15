@@ -23,11 +23,11 @@ export function ShortenedUrlResult({ shortUrl }: Props) {
           type="text"
           readOnly
           value={shortUrl}
-          className="w-full px-3 py-2 text-sm bg-white border rounded focus:outline-none"
+          className="w-full px-3 py-2 text-sm text-gray-700 bg-white border rounded focus:outline-none"
         />
         <button
           onClick={copyToClipboard}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-16 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
           복사
         </button>

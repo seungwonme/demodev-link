@@ -1,10 +1,7 @@
-import ClickAnalytics from "@/components/analytics/click-analytics";
+"use server";
 
-export default function AnalyticsPage() {
-  return (
-    <main className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">링크 분석</h1>
-      <ClickAnalytics />
-    </main>
-  );
+import AnalyticsContainer from "@/containers/analytics-container";
+
+export default async function Analytics() {
+  return <AnalyticsContainer />;
 }
