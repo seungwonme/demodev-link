@@ -1,6 +1,7 @@
 .
 ├── changes.patch
 ├── commit.log
+├── components.json
 ├── eslint.config.mjs
 ├── next-env.d.ts
 ├── next.config.ts
@@ -29,9 +30,13 @@
 │   ├── components
 │   │   ├── analytics
 │   │   ├── nav.tsx
+│   │   ├── ui
 │   │   └── url
 │   ├── containers
+│   │   ├── analytics-container.tsx
 │   │   └── home-container.tsx
+│   ├── lib
+│   │   └── utils.ts
 │   ├── libs
 │   │   └── supabase.ts
 │   ├── services
@@ -43,4 +48,4 @@
 │   └── config.toml
 └── tsconfig.json
 
-15 directories, 29 files
+17 directories, 32 files

@@ -1,17 +1,21 @@
 "use client";
 
+import { useState } from "react";
+
 interface Props {
   shortUrl: string;
 }
 
 export function ShortenedUrlResult({ shortUrl }: Props) {
+  const [message, setMessage] = useState<string>("");
+
   async function copyToClipboard() {
     try {
       await navigator.clipboard.writeText(shortUrl);
-      alert("URL이 클립보드에 복사되었습니다!");
+      setMessage("URL이 클립보드에 복사되었습니다!");
     } catch (error) {
       console.error("URL 복사에 실패했습니다.", error);
-      alert("URL 복사에 실패했습니다.");
+      setMessage("URL 복사에 실패했습니다.");
     }
   }
 
@@ -32,6 +36,7 @@ export function ShortenedUrlResult({ shortUrl }: Props) {
           복사
         </button>
       </div>
+      {message && <div className="mt-2 text-sm text-blue-500">{message}</div>}
     </div>
   );
 }

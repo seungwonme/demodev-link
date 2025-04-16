@@ -220,16 +220,14 @@ nextjs에서는 여러 디렉토리 구조를 사용할 수 있지만, [`app` �
 
 ### Testing Environment
 
-- [NetxJS/Testing](https://nextjs.org/docs/pages/building-your-application/testing)
+- [Next.js/Testing](https://nextjs.org/docs/pages/building-your-application/testing)
 
-#### Jest
+#### Vitest
 
-- [Setting ui Jest with NextJS](https://nextjs.org/docs/pages/building-your-application/testing/jest)
+- [Setting up Vitest with Next.js](https://nextjs.org/docs/pages/building-your-application/testing/vitest)
 
 ```bash
-pnpm install -D jest jest-environment-jsdom @testing-library/react @testing-library/dom @testing-library/jest-dom ts-node
-
-pnpm create jest@latest
+pnpm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @testing-library/dom vite-tsconfig-paths
 ```
 
 ## Module Convention

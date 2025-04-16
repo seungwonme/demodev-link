@@ -1,13 +1,9 @@
 "use server";
 
 import { LinkService } from "@/services/link.service";
-// LinkService에서 반환하는 link 객체의 타입을 가져옵니다 (실제 타입으로 교체 필요)
-// 예시: import { Link } from '@prisma/client'; 또는 직접 정의한 타입
-type LinkType = {
-  slug: string;
-  original_url: string;
-  // ... 기타 속성
-};
+import { Database } from "@/types/supabase";
+
+type LinkType = Database["public"]["Tables"]["links"]["Row"];
 
 import { notFound, redirect } from "next/navigation";
 
@@ -16,7 +12,7 @@ interface Props {
 }
 
 export default async function RedirectPage({ params }: Props) {
-  const { slug } = await params; // await 제거
+  const { slug } = await params;
 
   let link: LinkType | null = null; // link 변수를 try 블록 외부에서 접근 가능하도록 선언
 
@@ -56,18 +52,16 @@ export default async function RedirectPage({ params }: Props) {
 
 // 메타데이터 설정 (수정)
 export async function generateMetadata({ params }: Props) {
-  const { slug } = await params; // await 제거
-  // 메타데이터 생성 시에도 링크 정보를 가져와 활용할 수 있습니다.
-  // try-catch를 사용하여 링크 조회 실패 시 기본값 제공 가능
-  const title = `리다이렉션 중... - ${slug}`;
-  // try {
-  //   const link = await LinkService.getLinkBySlug(slug);
-  //   if (link) {
-  //     title = `Redirecting to ${link.original_url.substring(0, 30)}...`; // 예시
-  //   }
-  // } catch (error) {
-  //   console.error("Error fetching link for metadata:", error);
-  // }
+  const { slug } = await params;
+  let title = `리다이렉션 중... - ${slug}`;
+  try {
+    const link = await LinkService.getLinkBySlug(slug);
+    if (link) {
+      title = `Redirecting to ${link.original_url.substring(0, 30)}...`; // 예시
+    }
+  } catch (error) {
+    console.error("Error fetching link for metadata:", error);
+  }
 
   return {
     title: title,

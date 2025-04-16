@@ -45,7 +45,7 @@ export default function UrlInputForm() {
           <input
             type="url"
             name="url"
-            placeholder="https://example.com"
+            placeholder="https://demodev.io"
             required
             className="w-full px-4 py-2 text-gray-700 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
