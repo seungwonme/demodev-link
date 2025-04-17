@@ -2,6 +2,7 @@
 ├── changes.patch
 ├── commit.log
 ├── components.json
+├── database.types.ts
 ├── eslint.config.mjs
 ├── next-env.d.ts
 ├── next.config.ts
@@ -19,26 +20,45 @@
 ├── src
 │   ├── __tests__
 │   │   ├── services
+│   │   │   └── link.service.test.ts
 │   │   ├── setup-test-env.ts
 │   │   └── setup.ts
 │   ├── actions
+│   │   ├── auth.ts
 │   │   ├── link.ts
 │   │   └── shorten-url.ts
 │   ├── app
 │   │   ├── [slug]
+│   │   │   └── page.tsx
 │   │   ├── analytics
+│   │   │   └── page.tsx
+│   │   ├── auth
+│   │   │   └── callback
 │   │   ├── favicon.ico
 │   │   ├── globals.css
 │   │   ├── layout.tsx
+│   │   ├── login
+│   │   │   └── page.tsx
 │   │   ├── not-found.tsx
-│   │   └── page.tsx
+│   │   ├── page.tsx
+│   │   ├── profile
+│   │   │   └── page.tsx
+│   │   └── reset-password
+│   │       └── page.tsx
 │   ├── components
 │   │   ├── analytics
+│   │   │   └── click-analytics.tsx
+│   │   ├── auth-status.tsx
 │   │   ├── link-list.tsx
 │   │   ├── link-stats.tsx
 │   │   ├── nav.tsx
 │   │   ├── ui
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   └── tabs.tsx
 │   │   └── url
+│   │       ├── shortened-url-result.tsx
+│   │       └── url-input-form.tsx
 │   ├── containers
 │   │   ├── analytics-container.tsx
 │   │   └── home-container.tsx
@@ -46,6 +66,7 @@
 │   │   ├── supabase.ts
 │   │   ├── types.ts
 │   │   └── utils.ts
+│   ├── middleware.ts
 │   ├── services
 │   │   └── link.service.ts
 │   └── types
@@ -59,4 +80,4 @@
 ├── tsconfig.tsbuildinfo
 └── vitest.config.mts
 
-19 directories, 41 files
+24 directories, 57 files

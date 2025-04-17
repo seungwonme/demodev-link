@@ -51,7 +51,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
         {links.map((link) => (
           <Card
             key={link.id}
-            className="cursor-pointer hover:bg-gray-50"
+            className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
             onClick={() =>
               setSelectedLink(selectedLink?.id === link.id ? null : link)
             }
@@ -67,7 +67,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
                 <div className="text-right">
                   <p className="font-medium">{link.click_count} 클릭</p>
                   <p className="text-sm text-gray-500">
-                    {formatDate(link.created_at)}
+                    {formatDate(link.created_at || "")}
                   </p>
                 </div>
               </div>

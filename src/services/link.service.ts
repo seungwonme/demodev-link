@@ -14,6 +14,16 @@ export class LinkService {
    */
   static async createShortLink(data: CreateLinkDTO): Promise<Link> {
     try {
+      // 현재 사용자의 세션 확인
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      // 로그인되지 않은 경우 오류 반환
+      if (!session) {
+        throw new Error("URL 단축 기능은 로그인 후 이용 가능합니다.");
+      }
+
       const slug: string = await Snowflake.generate();
 
       const { data: link, error } = await supabase

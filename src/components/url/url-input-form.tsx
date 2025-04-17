@@ -1,14 +1,39 @@
 "use client";
 
 import { shortenUrl } from "@/actions/shorten-url";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ShortenedUrlResult } from "@/components/url/shortened-url-result";
+import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 
 export default function UrlInputForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+
+      // 인증 상태 변경 감지
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        setIsLoggedIn(!!session);
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    };
+
+    checkAuthStatus();
+  }, []);
 
   function handleSuccess(url: string) {
     setShortUrl(url);
@@ -27,6 +52,12 @@ export default function UrlInputForm() {
   }
 
   async function handleSubmit(formData: FormData) {
+    // 로그인 상태 체크
+    if (!isLoggedIn) {
+      handleError("URL 단축 기능은 로그인 후 이용 가능합니다.");
+      return;
+    }
+
     // 입력값이 없으면 즉시 반환
     if (!inputValue.trim()) {
       handleError("URL을 입력해주세요.");
@@ -61,6 +92,48 @@ export default function UrlInputForm() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  // 아직 로그인 상태 확인 중이라면 로딩 표시
+  if (isLoggedIn === null) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // 로그인하지 않은 경우 안내 메시지 표시
+  if (isLoggedIn === false) {
+    return (
+      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+        <div className="flex items-start">
+          <svg
+            className="h-5 w-5 mr-2 text-yellow-500 mt-0.5"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <div>
+            <p className="text-sm text-yellow-700">
+              URL 단축 기능은 로그인 후 이용 가능합니다.
+            </p>
+            <Link
+              href="/login"
+              className="mt-2 inline-block rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+            >
+              로그인하러 가기
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
