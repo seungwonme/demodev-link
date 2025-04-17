@@ -19,7 +19,7 @@
     - [src/components](#srccomponents)
     - [src/constants](#srcconstants)
     - [src/hooks](#srchooks)
-    - [src/libs](#srclibs)
+    - [src/lib](#srclib)
     - [src/services](#srcservices)
     - [src/states](#srcstates)
     - [src/types](#srctypes)
@@ -200,7 +200,7 @@ nextjs에서는 여러 디렉토리 구조를 사용할 수 있지만, [`app` �
 
 - 페이지 곳곳에서 사용되는 공통 훅
 
-#### src/libs
+#### src/lib
 
 - 외부 라이브러리를 모아둔다. package.json때문에 쓸 일이 많지 않지만 튜닝해서 사용할 경우 발생
 
@@ -262,7 +262,7 @@ pnpm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @testin
 
 - 데이터베이스는 Supabase를 사용해야 하며 `@supabase/supabase-js`를 사용해야 합니다.
 - 사용자 인증은 Supabase Auth를 사용해야 하며 `@supabase/ssr`를 사용해야 합니다.
-- 클라이언트 파일은 [`src/libs/supabase.ts` 파일에 넣어야 합니다.](https://supabase.com/docs/guides/getting-started/tutorials/with-nextjs)
+- 클라이언트 파일은 [`src/lib/supabase.ts` 파일에 넣어야 합니다.](https://supabase.com/docs/guides/getting-started/tutorials/with-nextjs)
 
 ## Cursor Convention
 

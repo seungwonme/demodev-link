@@ -187,3 +187,24 @@ export const Constants = {
     Enums: {},
   },
 } as const;
+
+export interface Link {
+  id: string;
+  slug: string;
+  original_url: string;
+  created_at: string;
+  click_count: number;
+}
+
+export interface LinkClick {
+  id: string;
+  link_id: string;
+  clicked_at: string;
+  user_agent: string | null;
+  ip_address: string | null;
+}
+
+export interface DailyClickStats {
+  date: string;
+  clicks: number;
+}

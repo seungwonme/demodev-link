@@ -17,7 +17,12 @@
 │   └── window.svg
 ├── README.md
 ├── src
+│   ├── __tests__
+│   │   ├── services
+│   │   ├── setup-test-env.ts
+│   │   └── setup.ts
 │   ├── actions
+│   │   ├── link.ts
 │   │   └── shorten-url.ts
 │   ├── app
 │   │   ├── [slug]
@@ -29,6 +34,8 @@
 │   │   └── page.tsx
 │   ├── components
 │   │   ├── analytics
+│   │   ├── link-list.tsx
+│   │   ├── link-stats.tsx
 │   │   ├── nav.tsx
 │   │   ├── ui
 │   │   └── url
@@ -36,16 +43,20 @@
 │   │   ├── analytics-container.tsx
 │   │   └── home-container.tsx
 │   ├── lib
+│   │   ├── supabase.ts
+│   │   ├── types.ts
 │   │   └── utils.ts
-│   ├── libs
-│   │   └── supabase.ts
 │   ├── services
 │   │   └── link.service.ts
 │   └── types
 │       ├── link.ts
 │       └── supabase.ts
 ├── supabase
-│   └── config.toml
-└── tsconfig.json
+│   ├── config.toml
+│   └── migrations
+├── supabase.log
+├── tsconfig.json
+├── tsconfig.tsbuildinfo
+└── vitest.config.mts
 
-17 directories, 32 files
+19 directories, 41 files

@@ -1,11 +1,38 @@
-import { supabase } from "@/libs/supabase";
+import { supabase } from "@/lib/supabase";
 import { CreateLinkDTO, Link } from "@/types/link";
+import { DailyClickStats } from "@/types/supabase";
+
+// 헤더 관련 유틸리티 함수들
+export const ServerUtils = {
+  getRequestInfo(req?: Request) {
+    try {
+      if (req) {
+        // 직접 Request 객체가 전달된 경우 (API 라우트)
+        const userAgent = req.headers.get("user-agent");
+        const ip = req.headers.get("x-forwarded-for") || "unknown";
+        return { userAgent, ip };
+      }
+
+      // Request 객체가 없는 경우 기본값 반환
+      return {
+        userAgent: null,
+        ip: "unknown",
+      };
+    } catch (error) {
+      console.error("Error getting request info:", error);
+      return {
+        userAgent: null,
+        ip: "unknown",
+      };
+    }
+  },
+};
 
 export class LinkService {
   private static TABLE_NAME = "links";
 
   static async createShortLink(data: CreateLinkDTO): Promise<Link> {
-    let slug: string = Snowflake.generate();
+    const slug: string = Snowflake.generate();
 
     const { data: link, error } = await supabase
       .from(this.TABLE_NAME)
@@ -24,29 +51,93 @@ export class LinkService {
   }
 
   static async getLinkBySlug(slug: string): Promise<Link | null> {
-    const { data: link } = await supabase
-      .from(this.TABLE_NAME)
-      .select()
+    const { data, error } = await supabase
+      .from("links")
+      .select("*")
       .eq("slug", slug)
       .single();
 
-    return link;
+    if (error) throw error;
+    return data;
   }
 
-  static async incrementClickCount(slug: string): Promise<void> {
-    const { data: link } = await supabase
-      .from(this.TABLE_NAME)
-      .select("click_count")
+  static async incrementClickCount(
+    slug: string,
+    requestInfo?: { userAgent: string | null; ip: string },
+  ): Promise<void> {
+    let userAgent = null;
+    let ip = "unknown";
+
+    // 요청 정보가 주입되었으면 사용
+    if (requestInfo) {
+      userAgent = requestInfo.userAgent;
+      ip = requestInfo.ip;
+    }
+
+    // 링크 ID 가져오기
+    const { data: linkData } = await supabase
+      .from("links")
+      .select("id")
       .eq("slug", slug)
       .single();
 
-    if (!link) return;
+    if (!linkData) throw new Error(`링크를 찾을 수 없습니다: ${slug}`);
 
-    // click_count를 1 증가시킵니다
-    await supabase
-      .from(this.TABLE_NAME)
-      .update({ click_count: (link.click_count || 0) + 1 })
-      .eq("slug", slug);
+    // 클릭 이벤트 기록
+    const [clickInsert, countUpdate] = await Promise.all([
+      supabase.from("link_clicks").insert({
+        link_id: linkData.id,
+        user_agent: userAgent,
+        ip_address: ip,
+      }),
+      supabase.rpc("increment_click_count", { link_id: linkData.id }),
+    ]);
+
+    if (clickInsert.error) throw clickInsert.error;
+    if (countUpdate.error) throw countUpdate.error;
+  }
+
+  static async getTopLinks(limit: number = 10): Promise<Link[]> {
+    const { data, error } = await supabase
+      .from("links")
+      .select("*")
+      .order("click_count", { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getAllLinks(): Promise<Link[]> {
+    const { data, error } = await supabase
+      .from("links")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getLinkClickStats(linkId: string): Promise<DailyClickStats[]> {
+    const { data, error } = await supabase
+      .from("link_clicks")
+      .select("clicked_at")
+      .eq("link_id", linkId)
+      .order("clicked_at", { ascending: true });
+
+    if (error) throw error;
+
+    // 클릭 데이터를 일별로 집계
+    const dailyStats = data.reduce((acc: { [key: string]: number }, click) => {
+      const date = new Date(click.clicked_at).toISOString().split("T")[0];
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(dailyStats).map(([date, clicks]) => ({
+      date,
+      clicks,
+    }));
   }
 }
 

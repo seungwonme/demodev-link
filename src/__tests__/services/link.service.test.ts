@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { testSupabase } from "../setup";
 
-vi.mock("@/libs/supabase", () => {
+vi.mock("@/lib/supabase", () => {
   return {
     supabase: testSupabase,
   };

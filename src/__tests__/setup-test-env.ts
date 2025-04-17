@@ -28,6 +28,7 @@ beforeAll(async () => {
       `,
       });
     } catch (e) {
+      console.error("테이블 생성 에러:", e);
       // 첫 번째 방법이 실패하면 SQL 직접 실행을 시도
       await adminSupabase.rpc("exec", {
         sql: `

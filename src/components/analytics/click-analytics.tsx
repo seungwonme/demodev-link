@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { supabase } from "@/libs/supabase";
+import { supabase } from "@/lib/supabase";
 import { useTheme } from "next-themes";
 
 interface ClickData {
