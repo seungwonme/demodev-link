@@ -1,200 +1,235 @@
 import { supabase } from "@/lib/supabase";
 import { CreateLinkDTO, Link } from "@/types/link";
 import { DailyClickStats } from "@/types/supabase";
-
-// 헤더 관련 유틸리티 함수들
-export const ServerUtils = {
-  getRequestInfo(req?: Request) {
-    try {
-      if (req) {
-        // 직접 Request 객체가 전달된 경우 (API 라우트)
-        const userAgent = req.headers.get("user-agent");
-        const ip = req.headers.get("x-forwarded-for") || "unknown";
-        return { userAgent, ip };
-      }
-
-      // Request 객체가 없는 경우 기본값 반환
-      return {
-        userAgent: null,
-        ip: "unknown",
-      };
-    } catch (error) {
-      console.error("Error getting request info:", error);
-      return {
-        userAgent: null,
-        ip: "unknown",
-      };
-    }
-  },
-};
+import { Snowflake } from "@/lib/utils";
 
 export class LinkService {
   private static TABLE_NAME = "links";
+  private static CLICK_TABLE = "link_clicks";
 
+  /**
+   * 단축 URL을 생성합니다.
+   * @param data 원본 URL 정보
+   * @returns 생성된 링크 객체
+   */
   static async createShortLink(data: CreateLinkDTO): Promise<Link> {
-    const slug: string = Snowflake.generate();
+    try {
+      const slug: string = await Snowflake.generate();
 
-    const { data: link, error } = await supabase
-      .from(this.TABLE_NAME)
-      .insert([
-        {
-          slug,
-          original_url: data.original_url,
-          click_count: 0,
-        },
-      ])
-      .select()
-      .single();
+      const { data: link, error } = await supabase
+        .from(this.TABLE_NAME)
+        .insert([
+          {
+            slug,
+            original_url: data.original_url,
+            click_count: 0,
+          },
+        ])
+        .select()
+        .single();
 
-    if (error) throw error;
-    return link;
+      if (error) {
+        console.error("Error creating short link:", error);
+        throw new Error("단축 URL 생성 중 오류가 발생했습니다.");
+      }
+
+      return link;
+    } catch (error) {
+      console.error("Error in createShortLink:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("단축 URL 생성 중 알 수 없는 오류가 발생했습니다.");
+    }
   }
 
+  /**
+   * slug로 링크를 조회합니다.
+   * @param slug 단축 URL의 slug
+   * @returns 링크 객체 또는 null
+   */
   static async getLinkBySlug(slug: string): Promise<Link | null> {
-    const { data, error } = await supabase
-      .from("links")
-      .select("*")
-      .eq("slug", slug)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select("*")
+        .eq("slug", slug)
+        .single();
 
-    if (error) throw error;
-    return data;
+      if (error) {
+        if (error.code === "PGRST116") {
+          // 레코드가 없는 경우 (PGRST116: Did not find a result)
+          return null;
+        }
+        console.error("Error fetching link by slug:", error);
+        throw new Error("링크 조회 중 오류가 발생했습니다.");
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`Error in getLinkBySlug for slug ${slug}:`, error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("링크 조회 중 알 수 없는 오류가 발생했습니다.");
+    }
   }
 
+  /**
+   * 링크의 클릭 수를 증가시키고 클릭 정보를 기록합니다.
+   * @param slug 단축 URL의 slug
+   * @param requestInfo 요청 정보 (User-Agent, IP 등)
+   */
   static async incrementClickCount(
     slug: string,
     requestInfo?: { userAgent: string | null; ip: string },
   ): Promise<void> {
-    let userAgent = null;
-    let ip = "unknown";
+    try {
+      let userAgent = null;
+      let ip = "unknown";
 
-    // 요청 정보가 주입되었으면 사용
-    if (requestInfo) {
-      userAgent = requestInfo.userAgent;
-      ip = requestInfo.ip;
-    }
-
-    // 링크 ID 가져오기
-    const { data: linkData } = await supabase
-      .from("links")
-      .select("id")
-      .eq("slug", slug)
-      .single();
-
-    if (!linkData) throw new Error(`링크를 찾을 수 없습니다: ${slug}`);
-
-    // 클릭 이벤트 기록
-    const [clickInsert, countUpdate] = await Promise.all([
-      supabase.from("link_clicks").insert({
-        link_id: linkData.id,
-        user_agent: userAgent,
-        ip_address: ip,
-      }),
-      supabase.rpc("increment_click_count", { link_id: linkData.id }),
-    ]);
-
-    if (clickInsert.error) throw clickInsert.error;
-    if (countUpdate.error) throw countUpdate.error;
-  }
-
-  static async getTopLinks(limit: number = 10): Promise<Link[]> {
-    const { data, error } = await supabase
-      .from("links")
-      .select("*")
-      .order("click_count", { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async getAllLinks(): Promise<Link[]> {
-    const { data, error } = await supabase
-      .from("links")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async getLinkClickStats(linkId: string): Promise<DailyClickStats[]> {
-    const { data, error } = await supabase
-      .from("link_clicks")
-      .select("clicked_at")
-      .eq("link_id", linkId)
-      .order("clicked_at", { ascending: true });
-
-    if (error) throw error;
-
-    // 클릭 데이터를 일별로 집계
-    const dailyStats = data.reduce((acc: { [key: string]: number }, click) => {
-      const date = new Date(click.clicked_at).toISOString().split("T")[0];
-      acc[date] = (acc[date] || 0) + 1;
-      return acc;
-    }, {});
-
-    return Object.entries(dailyStats).map(([date, clicks]) => ({
-      date,
-      clicks,
-    }));
-  }
-}
-
-class Snowflake {
-  private static EPOCH = 1609459200000; // 2021-01-01 기준
-  private static WORKER_ID = 0;
-  private static SEQUENCE = 0;
-  private static LAST_TIMESTAMP = -1;
-
-  // Base62 문자셋 (0-9, a-z, A-Z)
-  private static BASE62 =
-    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-  static generate(): string {
-    let timestamp = Date.now() - this.EPOCH;
-
-    if (timestamp < this.LAST_TIMESTAMP) {
-      throw new Error("Clock moved backwards!");
-    }
-
-    if (timestamp === this.LAST_TIMESTAMP) {
-      this.SEQUENCE = (this.SEQUENCE + 1) & 4095; // 12비트 시퀀스
-      if (this.SEQUENCE === 0) {
-        timestamp = this.tilNextMillis(this.LAST_TIMESTAMP);
+      // 요청 정보가 주입되었으면 사용
+      if (requestInfo) {
+        userAgent = requestInfo.userAgent;
+        ip = requestInfo.ip;
       }
-    } else {
-      this.SEQUENCE = 0;
+
+      // 링크 ID 가져오기
+      const { data: linkData, error: linkError } = await supabase
+        .from(this.TABLE_NAME)
+        .select("id")
+        .eq("slug", slug)
+        .single();
+
+      if (linkError) {
+        console.error(`Error finding link with slug ${slug}:`, linkError);
+        throw new Error(`링크를 찾을 수 없습니다: ${slug}`);
+      }
+
+      if (!linkData) {
+        throw new Error(`링크를 찾을 수 없습니다: ${slug}`);
+      }
+
+      // 클릭 이벤트 기록
+      const [clickInsert, countUpdate] = await Promise.all([
+        supabase.from(this.CLICK_TABLE).insert({
+          link_id: linkData.id,
+          user_agent: userAgent,
+          ip_address: ip,
+        }),
+        supabase.rpc("increment_click_count", { link_id: linkData.id }),
+      ]);
+
+      if (clickInsert.error) {
+        console.error("Error recording click event:", clickInsert.error);
+        throw new Error("클릭 이벤트 기록 중 오류가 발생했습니다.");
+      }
+
+      if (countUpdate.error) {
+        console.error("Error incrementing click count:", countUpdate.error);
+        throw new Error("클릭 수 업데이트 중 오류가 발생했습니다.");
+      }
+    } catch (error) {
+      console.error(`Error in incrementClickCount for slug ${slug}:`, error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("클릭 수 업데이트 중 알 수 없는 오류가 발생했습니다.");
     }
-
-    this.LAST_TIMESTAMP = timestamp;
-
-    const id =
-      (BigInt(timestamp) << BigInt(22)) |
-      (BigInt(this.WORKER_ID) << BigInt(12)) | // 고정된 WORKER_ID 사용
-      BigInt(this.SEQUENCE);
-
-    return this.toBase62(id);
   }
 
-  private static tilNextMillis(lastTimestamp: number): number {
-    let timestamp = Date.now() - this.EPOCH;
-    while (timestamp <= lastTimestamp) {
-      timestamp = Date.now() - this.EPOCH;
+  /**
+   * 클릭 수가 많은 순으로 상위 링크들을 가져옵니다.
+   * @param limit 가져올 링크 수
+   * @returns 링크 객체 배열
+   */
+  static async getTopLinks(limit: number = 10): Promise<Link[]> {
+    try {
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select("*")
+        .order("click_count", { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error("Error fetching top links:", error);
+        throw new Error("인기 링크 조회 중 오류가 발생했습니다.");
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Error in getTopLinks:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("인기 링크 조회 중 알 수 없는 오류가 발생했습니다.");
     }
-    return timestamp;
   }
 
-  private static toBase62(num: bigint): string {
-    if (num === BigInt(0)) {
-      return "0"; // 0 처리
+  /**
+   * 모든 링크를 가져옵니다.
+   * @returns 링크 객체 배열
+   */
+  static async getAllLinks(): Promise<Link[]> {
+    try {
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching all links:", error);
+        throw new Error("전체 링크 조회 중 오류가 발생했습니다.");
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Error in getAllLinks:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("전체 링크 조회 중 알 수 없는 오류가 발생했습니다.");
     }
-    let result = "";
-    let value = num;
-    while (value > BigInt(0)) {
-      result = this.BASE62[Number(value % BigInt(62))] + result;
-      value = value / BigInt(62);
+  }
+
+  /**
+   * 특정 링크의 일별 클릭 통계를 가져옵니다.
+   * @param linkId 링크 ID
+   * @returns 일별 클릭 통계 배열
+   */
+  static async getLinkClickStats(linkId: string): Promise<DailyClickStats[]> {
+    try {
+      const { data, error } = await supabase
+        .from(this.CLICK_TABLE)
+        .select("clicked_at")
+        .eq("link_id", linkId)
+        .order("clicked_at", { ascending: true });
+
+      if (error) {
+        console.error(`Error fetching click stats for link ${linkId}:`, error);
+        throw new Error("클릭 통계 조회 중 오류가 발생했습니다.");
+      }
+
+      // 클릭 데이터를 일별로 집계
+      const dailyStats = data.reduce(
+        (acc: { [key: string]: number }, click) => {
+          const date = new Date(click.clicked_at).toISOString().split("T")[0];
+          acc[date] = (acc[date] || 0) + 1;
+          return acc;
+        },
+        {},
+      );
+
+      return Object.entries(dailyStats).map(([date, clicks]) => ({
+        date,
+        clicks,
+      }));
+    } catch (error) {
+      console.error(`Error in getLinkClickStats for link ${linkId}:`, error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("클릭 통계 조회 중 알 수 없는 오류가 발생했습니다.");
     }
-    return result;
   }
 }
