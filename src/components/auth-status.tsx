@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
@@ -10,14 +10,15 @@ export default function AuthStatus() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     // 현재 로그인된 사용자 정보 가져오기
     const fetchUser = async () => {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setUser(session?.user || null);
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
       setLoading(false);
 
       // 인증 상태 변경 감지
@@ -33,7 +34,7 @@ export default function AuthStatus() {
     };
 
     fetchUser();
-  }, []);
+  }, [supabase]);
 
   // 로그아웃 함수
   const handleLogout = async () => {

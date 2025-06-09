@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Link } from "@/types/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LinkService } from "@/services/link.service";
+import { getAllLinks } from "@/actions/link";
 import LinkStats from "./link-stats";
 
 interface LinkListProps {
@@ -23,7 +23,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
 
   const handleShowAll = async () => {
     if (!showAll) {
-      const allLinks = await LinkService.getAllLinks();
+      const allLinks = await getAllLinks();
       setLinks(allLinks);
     } else {
       setLinks(initialLinks);

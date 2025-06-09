@@ -1,6 +1,6 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -22,6 +22,7 @@ export async function login(
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -38,6 +39,7 @@ export async function login(
 export async function sendMagicLink(formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string;
 
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOtp({
     email,
     options: {
@@ -60,6 +62,7 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -83,6 +86,7 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
 export async function resetPassword(formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string;
 
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${
       process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
@@ -102,13 +106,15 @@ export async function updatePassword(formData: FormData): Promise<AuthResult> {
   const password = formData.get("password") as string;
 
   try {
-    // 먼저 현재 세션 확인
+    const supabase = await createClient();
+    
+    // 먼저 현재 사용자 확인
     const {
-      data: { session: currentSession },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    // 세션이 없는 경우
-    if (!currentSession) {
+    // 사용자가 없는 경우
+    if (!user) {
       return { error: "인증 세션이 만료되었습니다. 다시 로그인해주세요." };
     }
 
@@ -147,13 +153,15 @@ export async function updatePassword(formData: FormData): Promise<AuthResult> {
 
 export async function signOut(): Promise<AuthResult | undefined> {
   try {
-    // 세션 확인
+    const supabase = await createClient();
+    
+    // 사용자 확인
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    // 세션이 있을 때만 로그아웃 시도
-    if (session) {
+    // 사용자가 있을 때만 로그아웃 시도
+    if (user) {
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("서버 로그아웃 오류:", error);
@@ -173,6 +181,7 @@ export async function signOut(): Promise<AuthResult | undefined> {
 }
 
 export async function getSession() {
+  const supabase = await createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -190,6 +199,7 @@ export async function sendPhoneOTP(formData: FormData): Promise<AuthResult> {
   }
 
   try {
+    const supabase = await createClient();
     const { data, error } = await supabase.auth.signInWithOtp({
       phone,
     });
@@ -219,6 +229,7 @@ export async function verifyPhoneOTP(formData: FormData): Promise<AuthResult> {
   }
 
   try {
+    const supabase = await createClient();
     const { data, error } = await supabase.auth.verifyOtp({
       phone,
       token,

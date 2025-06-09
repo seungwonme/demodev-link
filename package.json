@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest",
-    "lint": "next lint"
+    "lint": "next lint",
+    "gen:types": "npx supabase gen types typescript --project-id 'lzwfzfvnijediorljtnk' > src/lib/database.types.ts",
+    "db:push": "npx supabase db push",
+    "db:pull": "npx supabase db pull"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

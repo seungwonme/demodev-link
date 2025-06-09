@@ -3,7 +3,7 @@
 import { shortenUrl } from "@/actions/shorten-url";
 import { useState, useEffect } from "react";
 import { ShortenedUrlResult } from "@/components/url/shortened-url-result";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 export default function UrlInputForm() {
@@ -12,13 +12,14 @@ export default function UrlInputForm() {
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
     const checkAuthStatus = async () => {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
+        data: { user },
+      } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
 
       // 인증 상태 변경 감지
       const {
@@ -33,7 +34,7 @@ export default function UrlInputForm() {
     };
 
     checkAuthStatus();
-  }, []);
+  }, [supabase]);
 
   function handleSuccess(url: string) {
     setShortUrl(url);

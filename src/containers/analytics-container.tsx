@@ -1,8 +1,6 @@
-"use server";
-
 import ClickAnalytics from "@/components/analytics/click-analytics";
 
-export default async function AnalyticsContainer() {
+export default function AnalyticsContainer() {
   return (
     <main className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8">
       <div className="mx-auto max-w-5xl">

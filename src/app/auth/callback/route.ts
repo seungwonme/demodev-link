@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -43,6 +43,7 @@ export async function GET(request: Request) {
 
   if (code) {
     try {
+      const supabase = await createClient();
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       console.groupCollapsed("app/auth/callback/route");
       console.log(data);

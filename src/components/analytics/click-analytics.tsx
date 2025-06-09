@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "next-themes";
 
 interface ClickData {
@@ -23,6 +23,7 @@ export default function ClickAnalytics() {
   const [data, setData] = useState<ClickData[]>([]);
   const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
+  const supabase = createClient();
 
   const isDark = theme === "dark";
 
@@ -44,7 +45,7 @@ export default function ClickAnalytics() {
     }
 
     fetchClickData();
-  }, []);
+  }, [supabase]);
 
   if (loading) {
     return (
@@ -54,10 +55,20 @@ export default function ClickAnalytics() {
     );
   }
 
+  if (data.length === 0) {
+    return (
+      <div className="w-full rounded-lg border bg-card p-8 text-card-foreground shadow-sm">
+        <h2 className="mb-4 text-2xl font-bold">상위 10개 링크 클릭 수</h2>
+        <p className="text-center text-muted-foreground">아직 클릭 데이터가 없습니다.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full h-[400px] rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
+    <div className="w-full rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
       <h2 className="mb-4 text-2xl font-bold">상위 10개 링크 클릭 수</h2>
-      <ResponsiveContainer width="100%" height="100%">
+      <div className="h-[400px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
           <CartesianGrid
             strokeDasharray="3 3"
@@ -91,6 +102,7 @@ export default function ClickAnalytics() {
           <Bar dataKey="click_count" fill={isDark ? "#818CF8" : "#4F46E5"} />
         </BarChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }

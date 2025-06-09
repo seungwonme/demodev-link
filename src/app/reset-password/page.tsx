@@ -3,13 +3,14 @@
 import { updatePassword } from "@/actions/auth";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isValidLink, setIsValidLink] = useState(false);
   const router = useRouter();
+  const supabase = createClient();
 
   // 이메일 링크의 유효성 확인
   useEffect(() => {
@@ -31,11 +32,11 @@ export default function ResetPasswordPage() {
           }
         }
 
-        // Supabase 세션 확인
+        // Supabase 사용자 확인
         const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session) {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
           setIsValidLink(true);
         } else {
           setMessage(
@@ -51,7 +52,7 @@ export default function ResetPasswordPage() {
     };
 
     checkToken();
-  }, []);
+  }, [supabase]);
 
   const handlePasswordUpdate = async (formData: FormData) => {
     setIsLoading(true);
@@ -76,22 +77,22 @@ export default function ResetPasswordPage() {
           "비밀번호가 성공적으로 변경되었습니다. 잠시 후 메인 페이지로 이동합니다.",
         );
 
-        // 세션 상태가 업데이트될 때까지 대기
-        const checkSessionAndRedirect = async () => {
+        // 사용자 상태가 업데이트될 때까지 대기
+        const checkUserAndRedirect = async () => {
           const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          if (session) {
-            // 세션이 확인되면 메인 페이지로 이동
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (user) {
+            // 사용자가 확인되면 메인 페이지로 이동
             router.push("/");
           } else {
-            // 세션이 없으면 로그인 페이지로 이동
+            // 사용자가 없으면 로그인 페이지로 이동
             router.push("/login");
           }
         };
 
-        // 3초 후 세션 확인 및 리다이렉트
-        setTimeout(checkSessionAndRedirect, 3000);
+        // 3초 후 사용자 확인 및 리다이렉트
+        setTimeout(checkUserAndRedirect, 3000);
       }
     } catch (error) {
       setMessage("비밀번호 변경 중 오류가 발생했습니다.");

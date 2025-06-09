@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 
@@ -9,24 +9,25 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
     async function getUser() {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      if (!session?.user) {
+      if (!user) {
         redirect("/login");
       }
 
-      setUser(session.user);
-      setEmail(session.user.email);
+      setUser(user);
+      setEmail(user.email || null);
       setLoading(false);
     }
 
     getUser();
-  }, []);
+  }, [supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

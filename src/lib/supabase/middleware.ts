@@ -1,17 +1,11 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  // 현재 요청 URL 가져오기
-  const requestUrl = new URL(request.url);
-
-  // 응답 객체 생성
-  let response = NextResponse.next({
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
     request,
   });
 
-  // Supabase 서버 클라이언트 설정
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -24,42 +18,38 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          response = NextResponse.next({
+          supabaseResponse = NextResponse.next({
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options)
           );
         },
       },
-    },
+    }
   );
 
-  // getUser()를 사용하여 현재 사용자 확인
+  // Use getUser() instead of getSession()
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 로그인이 필요한 페이지에 대한 보호
+  // Protected routes
+  const requestUrl = new URL(request.url);
   const protectedPaths = ["/analytics", "/profile"];
   const isProtectedPath = protectedPaths.some((path) =>
     requestUrl.pathname.startsWith(path),
   );
 
-  // 보호된 경로에 접근하려는데 로그인되지 않은 경우 리디렉션
+  // Redirect to login if accessing protected route without authentication
   if (isProtectedPath && !user) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // 로그인한 상태에서 로그인 페이지 접근 시 메인으로 리디렉션
+  // Redirect to home if accessing login page while authenticated
   if (requestUrl.pathname === "/login" && user) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  return response;
+  return supabaseResponse;
 }
-
-// 특정 경로에만 미들웨어 적용
-export const config = {
-  matcher: ["/profile", "/login", "/reset-password", "/analytics", "/api"],
-};

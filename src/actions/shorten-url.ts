@@ -2,17 +2,19 @@
 
 import { LinkService } from "@/services/link.service";
 import { CreateLinkDTO, LinkResponse } from "@/types/link";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 
 export async function shortenUrl(data: CreateLinkDTO): Promise<LinkResponse> {
   try {
-    // 현재 사용자의 세션 확인
+    const supabase = await createClient();
+    
+    // 현재 사용자 확인
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
     // 로그인되지 않은 경우 오류 반환
-    if (!session) {
+    if (!user) {
       throw new Error("URL 단축 기능은 로그인 후 이용 가능합니다.");
     }
 

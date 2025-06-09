@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { DailyClickStats } from "@/types/supabase";
 import { getLinkClickStats } from "@/actions/link";
@@ -42,10 +44,18 @@ export default function LinkStats({ linkId }: LinkStatsProps) {
     return <div className="text-center py-4">아직 클릭 데이터가 없습니다.</div>;
   }
 
+  // Format data to ensure proper date handling
+  const formattedStats = stats.map(stat => ({
+    ...stat,
+    date: new Date(stat.date).toISOString().split('T')[0]
+  }));
+
   return (
-    <div className="h-[300px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={stats}>
+    <div className="w-full">
+      <h3 className="mb-4 text-lg font-semibold">일별 클릭 추이</h3>
+      <div className="h-[300px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={formattedStats}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="date"
@@ -65,6 +75,7 @@ export default function LinkStats({ linkId }: LinkStatsProps) {
           />
         </LineChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }

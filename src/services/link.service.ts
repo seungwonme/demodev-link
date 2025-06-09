@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import { CreateLinkDTO, Link } from "@/types/link";
 import { DailyClickStats } from "@/types/supabase";
 import { Snowflake } from "@/lib/utils";
@@ -14,13 +14,15 @@ export class LinkService {
    */
   static async createShortLink(data: CreateLinkDTO): Promise<Link> {
     try {
-      // 현재 사용자의 세션 확인
+      const supabase = await createClient();
+      
+      // 현재 사용자 확인
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
+        data: { user },
+      } = await supabase.auth.getUser();
 
       // 로그인되지 않은 경우 오류 반환
-      if (!session) {
+      if (!user) {
         throw new Error("URL 단축 기능은 로그인 후 이용 가능합니다.");
       }
 
@@ -60,6 +62,7 @@ export class LinkService {
    */
   static async getLinkBySlug(slug: string): Promise<Link | null> {
     try {
+      const supabase = await createClient();
       const { data, error } = await supabase
         .from(this.TABLE_NAME)
         .select("*")
@@ -95,6 +98,7 @@ export class LinkService {
     requestInfo?: { userAgent: string | null; ip: string },
   ): Promise<void> {
     try {
+      const supabase = await createClient();
       let userAgent = null;
       let ip = "unknown";
 
@@ -155,6 +159,7 @@ export class LinkService {
    */
   static async getTopLinks(limit: number = 10): Promise<Link[]> {
     try {
+      const supabase = await createClient();
       const { data, error } = await supabase
         .from(this.TABLE_NAME)
         .select("*")
@@ -182,6 +187,7 @@ export class LinkService {
    */
   static async getAllLinks(): Promise<Link[]> {
     try {
+      const supabase = await createClient();
       const { data, error } = await supabase
         .from(this.TABLE_NAME)
         .select("*")
@@ -209,6 +215,7 @@ export class LinkService {
    */
   static async getLinkClickStats(linkId: string): Promise<DailyClickStats[]> {
     try {
+      const supabase = await createClient();
       const { data, error } = await supabase
         .from(this.CLICK_TABLE)
         .select("clicked_at")

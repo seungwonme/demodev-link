@@ -1,9 +1,10 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import { Link, DailyClickStats } from "@/types/supabase";
 
 export async function getTopLinks(limit: number = 10): Promise<Link[]> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("links")
     .select("*")
@@ -15,6 +16,7 @@ export async function getTopLinks(limit: number = 10): Promise<Link[]> {
 }
 
 export async function getAllLinks(): Promise<Link[]> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("links")
     .select("*")
@@ -25,6 +27,7 @@ export async function getAllLinks(): Promise<Link[]> {
 }
 
 export async function getLinkBySlug(slug: string): Promise<Link | null> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("links")
     .select("*")
@@ -40,6 +43,7 @@ export async function trackLinkClick(
   userAgent?: string | null,
   ip?: string,
 ): Promise<void> {
+  const supabase = await createClient();
   const [clickInsert, countUpdate] = await Promise.all([
     supabase.from("link_clicks").insert({
       link_id: linkId,
@@ -56,6 +60,7 @@ export async function trackLinkClick(
 export async function getLinkClickStats(
   linkId: string,
 ): Promise<DailyClickStats[]> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("link_clicks")
     .select("clicked_at")

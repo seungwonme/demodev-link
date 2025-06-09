@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import AuthStatus from "./auth-status";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 
@@ -21,14 +21,15 @@ export default function Navigation() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     // 현재 로그인된 사용자 정보 가져오기
     const fetchUser = async () => {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setUser(session?.user || null);
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
       setLoading(false);
 
       // 인증 상태 변경 감지
@@ -44,7 +45,7 @@ export default function Navigation() {
     };
 
     fetchUser();
-  }, []);
+  }, [supabase]);
 
   // 프로필 링크 클릭 핸들러
   const handleProfileClick = (e: React.MouseEvent) => {

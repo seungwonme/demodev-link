@@ -1,34 +1,35 @@
 # Conventions
 
-- [Package Manager](#package-manager)
 - [Git Convention](#git-convention)
   - [Branch Type Description](#branch-type-description)
   - [Commit Message Convention](#commit-message-convention)
   - [Issue Label Setting](#issue-label-setting)
 - [Code Style Convention](#code-style-convention)
   - [prettier](#prettier)
+  - [eslint](#eslint)
+  - [tsconfig](#tsconfig)
   - [pre-commit](#pre-commit)
+- [Comment Convention](#comment-convention)
 - [NextJS Convention](#nextjs-convention)
-  - [File Convention](#file-convention)
+  - [Package Manager](#package-manager)
+  - [File Name Convention](#file-name-convention)
   - [Function/Variable Convention](#functionvariable-convention)
   - [Component Convention](#component-convention)
   - [Directory Convention](#directory-convention)
     - [src/app](#srcapp)
     - [src/actions](#srcactions)
-    - [src/containers](#srccontainers)
     - [src/components](#srccomponents)
     - [src/constants](#srcconstants)
     - [src/hooks](#srchooks)
-    - [src/lib](#srclib)
-    - [src/services](#srcservices)
-    - [src/states](#srcstates)
+    - [src/utils](#srcutils)
+  - [src/states](#srcstates)
     - [src/types](#srctypes)
-  - [Testing Environment](#testing-environment)
-    - [Jest](#jest)
-- [Module Convention](#module-convention)
+  - [tests](#tests)
+- [Package Convention](#package-convention)
+  - [Vitest](#vitest)
   - [TailwindCSS](#tailwindcss)
   - [ShadCN Component](#shadcn-component)
-  - [Heroicons](#heroicons)
+  - [lucide-react](#lucide-react)
   - [Jotai](#jotai)
   - [React Query](#react-query)
   - [Supabase](#supabase)
@@ -36,10 +37,6 @@
   - [Code Writing](#code-writing)
   - [File Context](#file-context)
   - [Reference](#reference)
-
-## Package Manager
-
-[pnpm](https://pnpm.io/)을 사용합니다.
 
 ## Git Convention
 
@@ -118,10 +115,73 @@
 }
 ```
 
+### eslint
+
+`// eslint-disable-next-line` 주석은 정말 필요한 경우에만 사용하며, 가능한 한 ESLint 규칙을 준수하는 방향으로 코드를 수정하는 것을 우선시합니다.
+
+```mjs
+// .eslintrc.mjs
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+];
+
+export default eslintConfig;
+```
+
+### tsconfig
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "noImplicitAny": false, // any 타입 허용
+    "skipLibCheck": true,
+    "strict": false, // 엄격한 타입 검사 비활성화
+    "forceConsistentCasingInFileNames": false, // 파일 이름의 대소문자 일관성 비활성화
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
 ### pre-commit
 
 ```shell
-pnpm install --save-dev husky prettier eslint lint-staged eslint-config-prettier
+pnpm install --save-dev husky prettier eslint lint-staged eslint-config-prettier eslint-plugin-react-hooks
 
 pnpm dlx husky-init
 pnpm pkg set scripts.prepare="husky install"
@@ -145,15 +205,103 @@ chmod +x .husky/*
 ```shell
 . "$(dirname -- "$0")/_/husky.sh"
 
-pnpm dlx lint-staged
+pnpm lint-staged
+```
+
+## Comment Convention
+
+- [Todo Highlight](https://marketplace.visualstudio.com/items?itemName=wayou.vscode-todo-highlight) Extension 설치
+- Commend Palette -> `Preferences: Open User Settings (JSON)` -> 아래 코드 추가
+  - TODO: 해야 할 작업 표시 (미구현 기능, 추가 개발 필요 사항)
+  - NOTE: 중요한 설명이나 주의사항 기록
+  - FIXME: 수정이 필요한 버그나 문제점 표시
+  - TEST: 테스트가 필요한 부분이나 테스트 케이스 기록
+
+```json
+{
+  "todohighlight.include": [
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.html",
+    "**/*.php",
+    "**/*.css",
+    "**/*.scss",
+    "**/*.py",
+    "*/*"
+  ],
+  "todohighlight.exclude": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.vscode/**",
+    "**/.github/**",
+    "**/_output/**",
+    "**/*.min.*",
+    "**/*.map",
+    "**/.next/**"
+  ],
+  "todohighlight.maxFilesForSearch": 5120,
+  "todohighlight.toggleURI": false,
+  "todohighlight.isEnable": true,
+  "todohighlight.isCaseSensitive": true,
+  "todohighlight.defaultStyle": {
+    "color": "red",
+    "backgroundColor": "#2B2B2B",
+    "overviewRulerColor": "#ffab00",
+    "cursor": "pointer",
+    "border": "1px solid #eee",
+    "borderRadius": "2px",
+    "isWholeLine": true
+  },
+  "todohighlight.keywords": [
+    // Common
+    {
+      "text": "TODO:",
+      "color": "#DFB6FF",
+      "backgroundColor": "#2B2B2B",
+      "overviewRulerColor": "#DFB6FF"
+    },
+    {
+      "text": "NOTE:",
+      "color": "#98ECAB",
+      "backgroundColor": "#2B2B2B",
+      "overviewRulerColor": "#98ECAB"
+    },
+    {
+      "text": "FIXME:",
+      "color": "#FFB3B3",
+      "backgroundColor": "#2B2B2B",
+      "overviewRulerColor": "#FFB3B3"
+    },
+    {
+      "text": "TEST:",
+      "color": "#C8B9FF",
+      "backgroundColor": "#2B2B2B",
+      "overviewRulerColor": "#C8B9FF"
+    },
+    {
+      "text": "eslint-disable-next-line",
+      "color": "#4630BD",
+      "backgroundColor": "#2B2B2B",
+      "overviewRulerColor": "#407FBF"
+    }
+  ]
+}
 ```
 
 ## NextJS Convention
 
-### File Convention
+### Package Manager
 
-- `kebab-case` 로 작성합니다.
-- `not-found.js`, `date-picker.js` 처럼, 최대한 간결하게 하되, 단어 사이는 [하이픈으로 연결](https://nextjs.org/docs/app/api-reference/file-conventions)합니다.
+[pnpm](https://pnpm.io/)을 사용합니다.
+
+### File Name Convention
+
+- 모든 파일 이름은 `kebab-case` 로 작성합니다.
+- `not-found.tsx`, `mdx-components.tsx` 처럼, 최대한 간결하게 하되, 단어 사이는 [하이픈으로 연결](https://nextjs.org/docs/app/api-reference/file-conventions)합니다.
 
 ### Function/Variable Convention
 
@@ -162,8 +310,7 @@ pnpm dlx lint-staged
 
 ### Component Convention
 
-- 컴포넌트 명은 `PascalCase` 로 작성합니다.
-  - 모든 파일명은 `kebab-case`로 작성합니다.
+- Component 명은 `PascalCase` 로 작성합니다. (Component 파일명도 예외없이 `kebab-case`로 작성합니다)
 - Component는 재사용 가능하도록 설계해야 합니다.
 
 ### Directory Convention
@@ -181,11 +328,8 @@ nextjs에서는 여러 디렉토리 구조를 사용할 수 있지만, [`app` �
 
 #### src/actions
 
+- 무조건 API 대신 Server Action을 사용한다. 불가피한 경우에만 API를 사용한다.
 - NextJS Server Action 파일들을 넣어놓는다.
-
-#### src/containers
-
-- `page.tsx` 안에서 보여줄 컨텐츠들을 넣어놓는다.
 
 #### src/components
 
@@ -200,37 +344,77 @@ nextjs에서는 여러 디렉토리 구조를 사용할 수 있지만, [`app` �
 
 - 페이지 곳곳에서 사용되는 공통 훅
 
-#### src/lib
+#### src/utils
 
-- 외부 라이브러리를 모아둔다. package.json때문에 쓸 일이 많지 않지만 튜닝해서 사용할 경우 발생
+- 공통으로 사용되는 유틸 함수
+- e.g. supabase/client.ts, supabase/server.ts ...
 
-#### src/services
+### src/states
 
-- 각종 API 요청
-- GET, POST, PATCH...
-
-#### src/states
-
-- 페이지 곳곳에서 사용되는 state를 모아두는 곳
-- 전역 상태관리 남발하지 않는다. (props drilling을 막기 위해서는 `Jotai`를 사용)
+- props drilling을 막기 위한 전역 state를 모아둔다.
+- 전역 상태관리는 최대한 남발하지 않으며 jotai를 사용한다.
 
 #### src/types
 
 - 각종 타입 스크립트의 정의가 들어가는 곳
 
-### Testing Environment
+### tests
 
-- [Next.js/Testing](https://nextjs.org/docs/pages/building-your-application/testing)
+- 테스트 파일을 모아두는 곳
 
-#### Vitest
+## Package Convention
 
-- [Setting up Vitest with Next.js](https://nextjs.org/docs/pages/building-your-application/testing/vitest)
+- [2025년을 위한 필수 React 라이브러리들](https://news.hada.io/topic?id=19556)
+- [React Libraries for 2025](https://www.robinwieruch.de/react-libraries/)
 
-```bash
+### Vitest
+
+[How to set up Vitest with Next.js](https://nextjs.org/docs/pages/guides/testing/vitest)
+
+```sh
 pnpm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @testing-library/dom vite-tsconfig-paths
 ```
 
-## Module Convention
+`vitest.config.mts`
+
+```ts
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+export default defineConfig({
+  plugins: [tsconfigPaths(), react()],
+  test: {
+    environment: "jsdom",
+  },
+});
+```
+
+`package.json`
+
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest" // 추가
+  }
+}
+```
+
+테스트 예시: `__tests__/page.test.tsx`
+
+```tsx
+import { expect, test } from "vitest";
+import { render, screen } from "@testing-library/react";
+import Page from "../app/page";
+
+test("Page", () => {
+  render(<Page />);
+  expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeDefined();
+});
+```
 
 ### TailwindCSS
 
@@ -244,11 +428,11 @@ pnpm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @testin
 - 컴포넌트 사용 전 설치 여부를 확인해야 합니다: `/component/ui` 디렉토리 체크
 - 컴포넌트 설치 명령어를 사용해야 합니다: `pnpx shadcn@latest add [component-name]`
 
-### Heroicons
+### lucide-react
 
-- 모든 아이콘은 Heroicons를 사용해야 합니다.
-- 아이콘 임포트 방법: `import { IconName } from '@heroicons/react/24/outline';`
-- 예시: `import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';`
+- 모든 아이콘은 lucide-react를 사용해야 합니다.
+- 아이콘 임포트 방법: `import { IconName } from 'lucide-react';`
+- 예시: `import { Menu, X } from 'lucide-react';`
 
 ### Jotai
 
@@ -262,7 +446,7 @@ pnpm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @testin
 
 - 데이터베이스는 Supabase를 사용해야 하며 `@supabase/supabase-js`를 사용해야 합니다.
 - 사용자 인증은 Supabase Auth를 사용해야 하며 `@supabase/ssr`를 사용해야 합니다.
-- 클라이언트 파일은 [`src/lib/supabase.ts` 파일에 넣어야 합니다.](https://supabase.com/docs/guides/getting-started/tutorials/with-nextjs)
+- 클라이언트 파일은 [`utils/supabase` 폴더에 넣어야 합니다.](https://supabase.com/docs/guides/getting-started/tutorials/with-nextjs)
 
 ## Cursor Convention
 
@@ -275,6 +459,40 @@ pnpm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @testin
 2. 각 코드 파일의 첫 100줄에 해당 파일의 기능과 구현 로직을 명확히 문서화하세요.
 
 > Cursor는 파일 검색 시 최대 100줄의 코드를 읽습니다. 파일의 초반부에 주석을 통해 해당 파일의 목적과 주요 로직을 설명하면, Cursor 에이전트가 파일의 역할을 빠르게 파악하여 적절한 처리를 수행할 수 있습니다.
+
+```tsx
+/**
+ * @file UserProfile.tsx
+ * @description 사용자 프로필 페이지 컴포넌트
+ *
+ * 이 컴포넌트는 사용자의 프로필 정보를 표시하고 수정하는 기능을 제공합니다.
+ *
+ * 주요 기능:
+ * 1. 사용자 기본 정보 표시 (이름, 이메일, 프로필 이미지)
+ * 2. 프로필 정보 수정
+ * 3. 프로필 이미지 업로드
+ *
+ * 구현 로직:
+ * - Supabase Auth를 통한 사용자 인증 상태 확인
+ * - React Query를 사용한 프로필 데이터 fetching
+ * - 이미지 업로드를 위한 Supabase Storage 활용
+ * - Form 상태 관리를 위한 React Hook Form 사용
+ *
+ * @dependencies
+ * - @supabase/ssr
+ * - @tanstack/react-query
+ * - react-hook-form
+ * - @heroicons/react
+ */
+
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { createClient } from "@/utils/supabase/client";
+import { UserCircleIcon } from "@heroicons/react/24/outline";
+
+// ... 컴포넌트 구현 ...
+```
 
 3. 프로젝트의 상태와 구조를 `README.md`와 같은 전용 파일에 정기적으로 문서화하세요.
 
