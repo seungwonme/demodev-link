@@ -1,7 +1,7 @@
 "use server";
 
-import { LinkService } from "@/services/link.service";
-import { Database } from "@/types/supabase";
+import { LinkService } from "@/features/links/actions/link.service";
+import { Database } from "@/shared/types/supabase";
 
 type LinkType = Database["public"]["Tables"]["links"]["Row"];
 

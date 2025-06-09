@@ -56,6 +56,7 @@ cp .env.example .env.local
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key  # 관리자 기능에 필요
 ```
 
 4. 개발 서버 실행
@@ -68,62 +69,112 @@ pnpm dev
 
 브라우저에서 http://localhost:3000 을 열어 애플리케이션을 확인합니다.
 
+## 초기 관리자 설정
+
+이 애플리케이션은 사용자 승인 시스템을 사용합니다. 첫 관리자 계정을 설정하려면:
+
+1. **대화형 스크립트 사용 (권장)**
+   ```bash
+   pnpm run seed:admin
+   ```
+
+2. **SQL을 통한 직접 설정**
+   - Supabase 대시보드의 SQL 에디터 사용
+   - 자세한 방법은 [관리자 설정 가이드](docs/ADMIN_SETUP.md) 참조
+
+3. **환경 변수를 통한 자동 승인**
+   - `.env.local`에 `INITIAL_ADMIN_EMAIL` 설정
+   - 해당 이메일로 가입 시 자동으로 관리자 권한 부여
+
+📚 **자세한 설정 방법은 [관리자 설정 가이드](docs/ADMIN_SETUP.md)를 참조하세요.**
+
 ## 데이터베이스 구성
 
-이 프로젝트는 Supabase를 데이터베이스로 사용합니다. 다음 테이블을 생성해야 합니다:
+이 프로젝트는 Supabase를 데이터베이스로 사용합니다. 
 
-### `links` 테이블
+### 마이그레이션 실행
 
-```sql
-CREATE TABLE links (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug TEXT UNIQUE NOT NULL,
-  original_url TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  click_count INTEGER DEFAULT 0
-);
+```bash
+pnpm run db:push
 ```
 
-### `link_clicks` 테이블
+### 주요 테이블 구조
 
-```sql
-CREATE TABLE link_clicks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  link_id UUID REFERENCES links(id) ON DELETE CASCADE,
-  clicked_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  user_agent TEXT,
-  ip_address TEXT
-);
-```
+#### `profiles` 테이블 (사용자 프로필)
+- `id`: 사용자 ID (auth.users 참조)
+- `email`: 이메일 주소
+- `role`: 사용자 역할 (user/admin) - PostgreSQL enum
+- `status`: 계정 상태 (pending/approved/rejected) - PostgreSQL enum
+- `created_at`, `updated_at`: 타임스탬프
+- `approved_at`, `approved_by`: 승인 정보
+- `rejected_at`, `rejected_by`, `rejection_reason`: 거절 정보
 
-### 클릭 카운트 증가 함수
+#### `links` 테이블 (단축 URL)
+- `id`: 링크 ID
+- `slug`: 단축 URL 슬러그
+- `original_url`: 원본 URL
+- `user_id`: 생성한 사용자 ID
+- `click_count`: 클릭 수
+- `created_at`: 생성 시간
 
-```sql
-CREATE OR REPLACE FUNCTION increment_click_count(link_id UUID)
-RETURNS VOID AS $$
-BEGIN
-  UPDATE links
-  SET click_count = click_count + 1
-  WHERE id = link_id;
-END;
-$$ LANGUAGE plpgsql;
+#### `link_clicks` 테이블 (클릭 기록)
+- `id`: 클릭 ID
+- `link_id`: 링크 ID 참조
+- `clicked_at`: 클릭 시간
+- `user_agent`: 사용자 에이전트
+- `ip_address`: IP 주소
+
+### 데이터베이스 타입 생성
+
+타입스크립트 타입을 Supabase 스키마에서 자동 생성:
+
+```bash
+pnpm run gen:types
 ```
 
 ## 프로젝트 구조
 
 ```
 ├── src/
-│   ├── actions/          # 서버 액션
 │   ├── app/              # Next.js 앱 디렉토리
-│   ├── components/       # 재사용 가능한 컴포넌트
-│   ├── containers/       # 페이지 컨테이너
-│   ├── lib/              # 유틸리티 및 헬퍼 함수
-│   ├── services/         # 데이터 서비스
-│   └── types/            # TypeScript 타입 정의
+│   │   ├── admin/        # 관리자 페이지
+│   │   └── [slug]/       # 동적 리다이렉션 페이지
+│   ├── features/         # 기능별 모듈
+│   │   ├── auth/         # 인증 관련 기능
+│   │   ├── links/        # 링크 관리 기능
+│   │   └── analytics/    # 분석 기능
+│   ├── shared/           # 공유 모듈
+│   │   ├── components/   # 공통 컴포넌트
+│   │   ├── types/        # 공통 타입
+│   │   └── utils/        # 유틸리티 함수
+│   └── lib/              # 외부 라이브러리 설정
+├── supabase/
+│   └── migrations/       # 데이터베이스 마이그레이션
+├── scripts/              # 유틸리티 스크립트
+│   └── seed-admin.ts     # 관리자 생성 스크립트
+├── docs/                 # 문서
+│   └── ADMIN_SETUP.md    # 관리자 설정 가이드
 ├── public/               # 정적 파일
 ├── .env.example          # 환경 변수 예제
 └── README.md             # 프로젝트 설명
 ```
+
+## 주요 기능
+
+### 사용자 관리 시스템
+- 사용자 가입 시 관리자 승인 필요
+- 역할 기반 접근 제어 (RBAC)
+- 관리자 대시보드에서 사용자 관리
+
+### URL 단축 기능
+- Snowflake 알고리즘 기반 고유 ID 생성
+- 사용자별 링크 관리
+- 실시간 클릭 통계
+
+### 관리자 기능
+- 사용자 승인/거절
+- 역할 변경 (user/admin)
+- 전체 링크 및 통계 관리
 
 ## 라이센스
 

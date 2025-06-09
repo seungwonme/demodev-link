@@ -10,6 +10,6 @@ export default defineConfig({
       SUPABASE_TEST_URL: process.env.SUPABASE_TEST_URL,
       SUPABASE_TEST_KEY: process.env.SUPABASE_TEST_KEY,
     },
-    setupFiles: ["./src/__tests__/setup-test-env.ts"],
+    setupFiles: ["./test/config/setup-test-env.ts"],
   },
 });

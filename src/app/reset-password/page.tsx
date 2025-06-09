@@ -1,9 +1,14 @@
 "use client";
 
-import { updatePassword } from "@/actions/auth";
+import { updatePassword } from "@/features/auth/actions/auth";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Alert, AlertDescription } from "@/shared/components/ui/alert";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 
 export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -87,14 +92,14 @@ export default function ResetPasswordPage() {
             router.push("/");
           } else {
             // 사용자가 없으면 로그인 페이지로 이동
-            router.push("/login");
+            router.push("/admin/login");
           }
         };
 
         // 3초 후 사용자 확인 및 리다이렉트
         setTimeout(checkUserAndRedirect, 3000);
       }
-    } catch (error) {
+    } catch {
       setMessage("비밀번호 변경 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
@@ -103,82 +108,72 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">비밀번호 재설정</h1>
-          <p className="mt-2 text-gray-600">새로운 비밀번호를 입력해주세요</p>
-        </div>
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-3xl font-bold">비밀번호 재설정</CardTitle>
+          <CardDescription>새로운 비밀번호를 입력해주세요</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
 
-        {message && (
-          <div
-            className={`rounded-md p-4 text-sm ${
+          {message && (
+            <Alert variant={
               message.includes("오류") ||
               message.includes("실패") ||
               message.includes("만료") ||
               message.includes("일치하지")
-                ? "bg-red-50 text-red-600"
-                : "bg-green-50 text-green-600"
-            }`}
-          >
-            {message}
-          </div>
-        )}
+                ? "destructive"
+                : "default"
+            }>
+              <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          )}
 
-        {isValidLink ? (
-          <form action={handlePasswordUpdate} className="mt-8 space-y-4">
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
-                새 비밀번호
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                placeholder="새 비밀번호"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700"
-              >
-                비밀번호 확인
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                placeholder="비밀번호 확인"
-              />
-            </div>
-            <div>
-              <button
+          {isValidLink ? (
+            <form action={handlePasswordUpdate} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">
+                  새 비밀번호
+                </Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  placeholder="새 비밀번호"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">
+                  비밀번호 확인
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                  placeholder="비밀번호 확인"
+                />
+              </div>
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
+                className="w-full"
               >
                 {isLoading ? "처리 중..." : "비밀번호 변경하기"}
-              </button>
+              </Button>
+            </form>
+          ) : (
+            <div className="text-center">
+              <Button
+                variant="link"
+                onClick={() => router.push("/admin/login")}
+              >
+                로그인 페이지로 돌아가기
+              </Button>
             </div>
-          </form>
-        ) : (
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => router.push("/login")}
-              className="text-blue-600 hover:text-blue-800"
-            >
-              로그인 페이지로 돌아가기
-            </button>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
