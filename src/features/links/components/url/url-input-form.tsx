@@ -10,12 +10,17 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { AlertCircle, Info, Loader2, X } from "lucide-react";
+import { Switch } from "@/shared/components/ui/switch";
+import { Textarea } from "@/shared/components/ui/textarea";
 
 export default function UrlInputForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
+  const [description, setDescription] = useState("");
+  const [customSlug, setCustomSlug] = useState("");
+  const [showCustomSlug, setShowCustomSlug] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const supabase = createClient();
 
@@ -44,7 +49,11 @@ export default function UrlInputForm() {
   function handleSuccess(url: string) {
     setShortUrl(url);
     setError(null);
-    // 성공 후 폼 초기화하지 않고 유지 (사용자가 결과 확인 가능)
+    // 성공 후 폼 초기화
+    setInputValue("");
+    setDescription("");
+    setCustomSlug("");
+    setShowCustomSlug(false);
   }
 
   function handleError(message: string) {
@@ -85,7 +94,11 @@ export default function UrlInputForm() {
         return;
       }
 
-      const result = await shortenUrl({ original_url: inputValue });
+      const result = await shortenUrl({ 
+        original_url: inputValue,
+        custom_slug: showCustomSlug && customSlug.trim() ? customSlug.trim() : undefined,
+        description: description.trim() || undefined
+      });
       handleSuccess(result.shortUrl);
     } catch (error) {
       console.error("URL 단축 오류:", error);
@@ -155,6 +168,63 @@ export default function UrlInputForm() {
               </button>
             )}
           </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="description">
+              설명 (선택사항)
+            </Label>
+            <Textarea
+              id="description"
+              name="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="이 링크에 대한 설명을 입력하세요 (예: 2024년 블로그 포스트, 회사 소개 페이지 등)"
+              disabled={isLoading}
+              rows={3}
+              maxLength={500}
+            />
+            <p className="text-xs text-muted-foreground">
+              설명을 추가하면 나중에 링크를 분석할 때 더 쉽게 이해할 수 있습니다.
+            </p>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="custom-slug"
+              checked={showCustomSlug}
+              onCheckedChange={setShowCustomSlug}
+              disabled={isLoading}
+            />
+            <Label htmlFor="custom-slug" className="text-sm font-normal">
+              사용자 정의 주소 사용
+            </Label>
+          </div>
+          
+          {showCustomSlug && (
+            <div className="space-y-2">
+              <Label htmlFor="slug-input">
+                사용자 정의 주소 (영문, 숫자, 하이픈만 가능)
+              </Label>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">{window.location.origin}/</span>
+                <Input
+                  id="slug-input"
+                  type="text"
+                  name="slug"
+                  value={customSlug}
+                  onChange={(e) => setCustomSlug(e.target.value.replace(/[^a-zA-Z0-9-]/g, ''))}
+                  placeholder="my-custom-link"
+                  disabled={isLoading}
+                  className="flex-1"
+                  maxLength={50}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                사용 가능한 문자: 영문(a-z, A-Z), 숫자(0-9), 하이픈(-)
+              </p>
+            </div>
+          )}
+          
           <Button
             type="submit"
             disabled={isLoading}

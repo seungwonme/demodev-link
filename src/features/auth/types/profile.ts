@@ -1,8 +1,13 @@
 // Import types from the generated database types
-import { UserStatus, UserRole, Profile as DbProfile, PendingUser as DbPendingUser } from '@/shared/types/database.types';
+import type { Database } from '@/shared/types/database.types';
 
-// Re-export the enum types for backward compatibility
-export type { UserStatus, UserRole };
+// Define the enum types based on the database schema
+export type UserStatus = 'pending' | 'approved' | 'rejected';
+export type UserRole = 'user' | 'admin';
+
+// Define type aliases for the database types
+type DbProfile = Database['public']['Tables']['profiles']['Row'];
+type DbPendingUser = Database['public']['Views']['pending_users']['Row'];
 
 // Re-export the database types with the same interface names
 export type Profile = DbProfile;

@@ -5,14 +5,16 @@ import { UserStatus, UserRole } from "@/features/auth/types/profile";
 import { revalidatePath } from "next/cache";
 
 export async function updateUserStatus(
-  userId: string, 
-  status: UserStatus, 
-  rejectionReason?: string
+  userId: string,
+  status: UserStatus,
+  rejectionReason?: string,
 ) {
   const supabase = await createClient();
-  
+
   // Check if current user is admin
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
   const { data: currentUserProfile } = await supabase
@@ -26,7 +28,15 @@ export async function updateUserStatus(
   }
 
   // Update user status
-  const updateData: any = {
+  const updateData: {
+    status: UserStatus;
+    updated_at: string;
+    approved_at?: string;
+    approved_by?: string;
+    rejected_at?: string;
+    rejected_by?: string;
+    rejection_reason?: string;
+  } = {
     status,
     updated_at: new Date().toISOString(),
   };
@@ -52,9 +62,11 @@ export async function updateUserStatus(
 
 export async function updateUserRole(userId: string, role: UserRole) {
   const supabase = await createClient();
-  
+
   // Check if current user is admin
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
   const { data: currentUserProfile } = await supabase
@@ -75,9 +87,9 @@ export async function updateUserRole(userId: string, role: UserRole) {
   // Update user role
   const { error } = await supabase
     .from("profiles")
-    .update({ 
+    .update({
       role,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
     .eq("id", userId);
 

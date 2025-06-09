@@ -47,16 +47,19 @@ interface UserManagementTableProps {
   currentUserId: string;
 }
 
-export default function UserManagementTable({ users, currentUserId }: UserManagementTableProps) {
+export default function UserManagementTable({
+  users,
+  currentUserId,
+}: UserManagementTableProps) {
   const [loadingUsers, setLoadingUsers] = useState<Set<string>>(new Set());
   const [rejectionReason, setRejectionReason] = useState("");
 
   const handleApprove = async (userId: string) => {
-    setLoadingUsers(prev => new Set(prev).add(userId));
+    setLoadingUsers((prev) => new Set(prev).add(userId));
     try {
       await updateUserStatus(userId, "approved");
     } finally {
-      setLoadingUsers(prev => {
+      setLoadingUsers((prev) => {
         const newSet = new Set(prev);
         newSet.delete(userId);
         return newSet;
@@ -67,13 +70,12 @@ export default function UserManagementTable({ users, currentUserId }: UserManage
   const handleReject = async (userId: string) => {
     if (!rejectionReason.trim()) return;
 
-    setLoadingUsers(prev => new Set(prev).add(userId));
+    setLoadingUsers((prev) => new Set(prev).add(userId));
     try {
       await updateUserStatus(userId, "rejected", rejectionReason);
       setRejectionReason("");
-      setRejectingUserId(null);
     } finally {
-      setLoadingUsers(prev => {
+      setLoadingUsers((prev) => {
         const newSet = new Set(prev);
         newSet.delete(userId);
         return newSet;
@@ -81,12 +83,15 @@ export default function UserManagementTable({ users, currentUserId }: UserManage
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: "user" | "admin") => {
-    setLoadingUsers(prev => new Set(prev).add(userId));
+  const handleRoleChange = async (
+    userId: string,
+    newRole: "user" | "admin",
+  ) => {
+    setLoadingUsers((prev) => new Set(prev).add(userId));
     try {
       await updateUserRole(userId, newRole);
     } finally {
-      setLoadingUsers(prev => {
+      setLoadingUsers((prev) => {
         const newSet = new Set(prev);
         newSet.delete(userId);
         return newSet;
@@ -116,150 +121,173 @@ export default function UserManagementTable({ users, currentUserId }: UserManage
             </TableRow>
           </TableHeader>
           <TableBody>
-          {users.map((user) => {
-            const isLoading = loadingUsers.has(user.id);
-            const isCurrentUser = user.id === currentUserId;
+            {users.map((user) => {
+              const isLoading = loadingUsers.has(user.id);
+              const isCurrentUser = user.id === currentUserId;
 
-            return (
-              <TableRow key={user.id} className={isLoading ? "opacity-50" : ""}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback>
-                        <User className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">
-                        {user.email} {isCurrentUser && "(나)"}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        ID: {user.id.slice(0, 8)}...
+              return (
+                <TableRow
+                  key={user.id}
+                  className={isLoading ? "opacity-50" : ""}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">
+                          {user.email} {isCurrentUser && "(나)"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          ID: {user.id.slice(0, 8)}...
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={
-                    user.status === "approved" 
-                      ? "default" 
-                      : user.status === "pending"
-                      ? "secondary"
-                      : "destructive"
-                  }>
-                    {user.status === "approved" ? "승인됨" : user.status === "pending" ? "대기중" : "거절됨"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {user.role === "admin" ? (
-                      <ShieldCheck className="h-4 w-4 text-primary" />
-                    ) : (
-                      <User className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span className="text-sm">
-                      {user.role === "admin" ? "관리자" : "사용자"}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {new Date(user.created_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    {user.status === "pending" && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleApprove(user.id)}
-                          disabled={isLoading}
-                        >
-                          <Check className="h-4 w-4 mr-1" />
-                          승인
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={isLoading}
-                              onClick={() => setRejectionReason("")}
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              거절
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>사용자 가입 거절</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                이 사용자의 가입을 거절하시겠습니까? 거절 사유를 입력해주세요.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <div className="grid gap-4 py-4">
-                              <div className="grid gap-2">
-                                <Label htmlFor="rejection-reason">거절 사유</Label>
-                                <Input
-                                  id="rejection-reason"
-                                  value={rejectionReason}
-                                  onChange={(e) => setRejectionReason(e.target.value)}
-                                  placeholder="거절 사유를 입력하세요"
-                                />
-                              </div>
-                            </div>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel onClick={() => {
-                                setRejectionReason("");
-                              }}>
-                                취소
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleReject(user.id)}
-                                disabled={!rejectionReason.trim()}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        user.status === "approved"
+                          ? "default"
+                          : user.status === "pending"
+                          ? "secondary"
+                          : "destructive"
+                      }
+                    >
+                      {user.status === "approved"
+                        ? "승인됨"
+                        : user.status === "pending"
+                        ? "대기중"
+                        : "거절됨"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {user.role === "admin" ? (
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                      ) : (
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <span className="text-sm">
+                        {user.role === "admin" ? "관리자" : "사용자"}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {user.status === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleApprove(user.id)}
+                            disabled={isLoading}
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            승인
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={isLoading}
+                                onClick={() => setRejectionReason("")}
                               >
+                                <X className="h-4 w-4 mr-1" />
                                 거절
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </>
-                    )}
-                    
-                    {user.status === "approved" && !isCurrentUser && (
-                      <AlertDialog>
-                        <Select
-                          value={user.role}
-                          onValueChange={(value) => handleRoleChange(user.id, value as "user" | "admin")}
-                          disabled={isLoading}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="user">사용자</SelectItem>
-                            <SelectItem value="admin">관리자</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </AlertDialog>
-                    )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  사용자 가입 거절
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  이 사용자의 가입을 거절하시겠습니까? 거절
+                                  사유를 입력해주세요.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                  <Label htmlFor="rejection-reason">
+                                    거절 사유
+                                  </Label>
+                                  <Input
+                                    id="rejection-reason"
+                                    value={rejectionReason}
+                                    onChange={(e) =>
+                                      setRejectionReason(e.target.value)
+                                    }
+                                    placeholder="거절 사유를 입력하세요"
+                                  />
+                                </div>
+                              </div>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel
+                                  onClick={() => {
+                                    setRejectionReason("");
+                                  }}
+                                >
+                                  취소
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleReject(user.id)}
+                                  disabled={!rejectionReason.trim()}
+                                >
+                                  거절
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      )}
 
-                    {user.status === "rejected" && user.rejection_reason && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-xs text-muted-foreground cursor-help">
-                            사유: {user.rejection_reason.slice(0, 20)}...
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">{user.rejection_reason}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
+                      {user.status === "approved" && !isCurrentUser && (
+                        <AlertDialog>
+                          <Select
+                            value={user.role || "user"}
+                            onValueChange={(value) =>
+                              handleRoleChange(
+                                user.id,
+                                value as "user" | "admin",
+                              )
+                            }
+                            disabled={isLoading}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">사용자</SelectItem>
+                              <SelectItem value="admin">관리자</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </AlertDialog>
+                      )}
+
+                      {user.status === "rejected" && user.rejection_reason && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-xs text-muted-foreground cursor-help">
+                              사유: {user.rejection_reason.slice(0, 20)}...
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">{user.rejection_reason}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
             })}
           </TableBody>
         </Table>

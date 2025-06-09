@@ -8,12 +8,12 @@ export type AuthResult =
   | {
       success: string;
       error?: undefined;
-      data?: any;
+      data?: unknown;
     }
   | {
       error: string;
       success?: undefined;
-      data?: any;
+      data?: unknown;
     };
 
 export async function login(
@@ -45,7 +45,7 @@ export async function sendMagicLink(formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string;
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       emailRedirectTo: `${
@@ -68,7 +68,7 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
   const password = formData.get("password") as string;
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
+  const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -92,7 +92,7 @@ export async function resetPassword(formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string;
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${
       process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
     }/reset-password`,
@@ -112,7 +112,7 @@ export async function updatePassword(formData: FormData): Promise<AuthResult> {
 
   try {
     const supabase = await createClient();
-    
+
     // 먼저 현재 사용자 확인
     const {
       data: { user },
@@ -124,7 +124,7 @@ export async function updatePassword(formData: FormData): Promise<AuthResult> {
     }
 
     // 비밀번호 업데이트
-    const { data, error } = await supabase.auth.updateUser({
+    const { error } = await supabase.auth.updateUser({
       password,
     });
 
@@ -159,7 +159,7 @@ export async function updatePassword(formData: FormData): Promise<AuthResult> {
 export async function signOut(): Promise<AuthResult | undefined> {
   try {
     const supabase = await createClient();
-    
+
     // 사용자 확인
     const {
       data: { user },
@@ -205,7 +205,7 @@ export async function sendPhoneOTP(formData: FormData): Promise<AuthResult> {
 
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithOtp({
       phone,
     });
 

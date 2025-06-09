@@ -1,33 +1,16 @@
+import { AuthService } from "@/features/auth/services/auth.service";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Button } from "@/shared/components/ui/button";
 import Link from "next/link";
 import { XCircleIcon } from "@heroicons/react/24/outline";
 
+// Force dynamic rendering since we use cookies
+export const dynamic = "force-dynamic";
+
 export default async function RejectedPage() {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    redirect("/admin/login");
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  // If user is approved, redirect to admin
-  if (profile?.status === "approved") {
-    redirect("/admin/dashboard");
-  }
-
-  // If user is pending, redirect to pending page
-  if (profile?.status === "pending") {
-    redirect("/admin/pending");
-  }
+  // Check if user is rejected - this will redirect if not
+  const { profile } = await AuthService.requireAuth({ requiredStatus: "rejected" });
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
@@ -44,14 +27,13 @@ export default async function RejectedPage() {
           </h1>
 
           <div className="space-y-4 text-gray-600 dark:text-gray-400">
-            <p>
-              죄송합니다. 회원가입 신청이 거절되었습니다.
-            </p>
-            
+            <p>죄송합니다. 회원가입 신청이 거절되었습니다.</p>
+
             {profile?.rejection_reason && (
               <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
                 <p className="text-sm text-red-700 dark:text-red-300">
-                  <strong>거절 사유:</strong><br />
+                  <strong>거절 사유:</strong>
+                  <br />
                   {profile.rejection_reason}
                 </p>
               </div>
@@ -68,14 +50,20 @@ export default async function RejectedPage() {
                 메인 페이지로 돌아가기
               </Button>
             </Link>
-            
-            <form action={async () => {
-              "use server";
-              const supabase = await createClient();
-              await supabase.auth.signOut();
-              redirect("/admin/login");
-            }}>
-              <Button type="submit" variant="ghost" className="w-full text-red-600 hover:text-red-700">
+
+            <form
+              action={async () => {
+                "use server";
+                const supabase = await createClient();
+                await supabase.auth.signOut();
+                redirect("/admin/login");
+              }}
+            >
+              <Button
+                type="submit"
+                variant="ghost"
+                className="w-full text-red-600 hover:text-red-700"
+              >
                 로그아웃
               </Button>
             </form>

@@ -1,9 +1,8 @@
 "use server";
 
 import { LinkService } from "@/features/links/actions/link.service";
-import { Database } from "@/shared/types/supabase";
-
-type LinkType = Database["public"]["Tables"]["links"]["Row"];
+import { Link } from "@/shared/types/link";
+import { headers } from "next/headers";
 
 import { notFound, redirect } from "next/navigation";
 
@@ -14,7 +13,15 @@ interface Props {
 export default async function RedirectPage({ params }: Props) {
   const { slug } = await params;
 
-  let link: LinkType | null = null; // link 변수를 try 블록 외부에서 접근 가능하도록 선언
+  // Get request headers to extract user agent
+  const headersList = await headers();
+  const userAgent = headersList.get("user-agent");
+  const ip =
+    headersList.get("x-forwarded-for") ||
+    headersList.get("x-real-ip") ||
+    "unknown";
+
+  let link: Link | null = null; // link 변수를 try 블록 외부에서 접근 가능하도록 선언
 
   try {
     // 1. 링크 정보 가져오기
@@ -26,8 +33,11 @@ export default async function RedirectPage({ params }: Props) {
       notFound();
     }
 
-    // 3. 링크가 있으면 클릭 수 증가 시도
-    await LinkService.incrementClickCount(slug);
+    // 3. 링크가 있으면 클릭 수 증가 시도 (user agent와 IP 정보 포함)
+    await LinkService.incrementClickCount(slug, {
+      userAgent,
+      ip: ip.split(",")[0].trim(), // IP 주소가 여러 개인 경우 첫 번째 것만 사용
+    });
   } catch (error) {
     // 4. 데이터베이스 조회/업데이트 중 발생한 예기치 못한 에러 처리
     console.error(`Error processing slug ${slug}:`, error);

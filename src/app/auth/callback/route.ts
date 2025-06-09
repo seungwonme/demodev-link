@@ -1,5 +1,29 @@
+/**
+ * @file src/app/auth/callback/route.ts
+ * @description Supabase 인증 콜백 처리 라우트
+ *
+ * 이 라우트는 Supabase 인증 프로세스의 콜백을 처리합니다.
+ *
+ * 주요 기능:
+ * 1. 인증 코드를 세션으로 교환
+ * 2. 인증 에러 처리 (만료된 링크, 액세스 거부 등)
+ * 3. 적절한 페이지로 리다이렉트
+ *
+ * 핵심 구현 로직:
+ * - URL 쿼리 파라미터와 해시에서 인증 정보 추출
+ * - Supabase 클라이언트로 코드 교환
+ * - 에러 타입별 적절한 리다이렉트 처리
+ *
+ * @dependencies
+ * - @/lib/supabase/server: 서버 사이드 Supabase 클라이언트
+ * - next/server: Next.js 서버 유틸리티
+ */
+
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+
+// 동적 렌더링 강제 설정 (Supabase 클라이언트 사용으로 인한 Static Generation 방지)
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);

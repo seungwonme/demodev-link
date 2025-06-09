@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import { CreateLinkDTO, Link } from "@/shared/types/link";
-import { DailyClickStats } from "@/shared/types/supabase";
-import { Snowflake } from "@/shared/utils/utils";
+import { DailyClickStats } from "@/shared/types/types";
+import { Snowflake } from "@/shared/utils/snowflake";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export class LinkService {
@@ -60,7 +60,31 @@ export class LinkService {
         userId = user.id;
       }
 
-      const slug: string = await Snowflake.generate();
+      let slug: string;
+      
+      // Check if custom slug is provided
+      if (data.custom_slug) {
+        // Validate custom slug format
+        if (!/^[a-zA-Z0-9-]+$/.test(data.custom_slug)) {
+          throw new Error("사용자 정의 주소는 영문, 숫자, 하이픈만 사용 가능합니다.");
+        }
+        
+        // Check if custom slug already exists
+        const { data: existingLink } = await supabase
+          .from(this.TABLE_NAME)
+          .select("id")
+          .eq("slug", data.custom_slug)
+          .single();
+          
+        if (existingLink) {
+          throw new Error("이미 사용 중인 주소입니다. 다른 주소를 입력해주세요.");
+        }
+        
+        slug = data.custom_slug;
+      } else {
+        // Generate random slug using Snowflake
+        slug = await Snowflake.generate();
+      }
 
       const { data: link, error } = await supabase
         .from(this.TABLE_NAME)
@@ -68,6 +92,7 @@ export class LinkService {
           {
             slug,
             original_url: data.original_url,
+            description: data.description || null,
             click_count: 0,
             user_id: userId,
           },
@@ -194,6 +219,95 @@ export class LinkService {
   }
 
   /**
+   * 특정 기간 동안 가장 많이 클릭된 링크들을 가져옵니다.
+   * @param period 'today' | 'week' | 'all'
+   * @param limit 가져올 링크 수
+   * @param supabaseClient 테스트용 Supabase 클라이언트 (선택적)
+   * @returns 링크 객체 배열 with click counts for the period
+   */
+  static async getTopClickedLinksByPeriod(
+    period: 'today' | 'week' | 'all',
+    limit: number = 10,
+    supabaseClient?: SupabaseClient,
+  ): Promise<(Link & { period_clicks: number })[]> {
+    try {
+      const supabase = await this.getSupabaseClient(supabaseClient);
+      
+      let startDate: Date;
+      const endDate = new Date();
+      
+      switch (period) {
+        case 'today':
+          startDate = new Date();
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          startDate = new Date();
+          startDate.setDate(startDate.getDate() - 7);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'all':
+          // For 'all', we'll just use the regular getTopLinks method
+          const allTimeLinks = await this.getTopLinks(limit, supabaseClient);
+          return allTimeLinks.map(link => ({ ...link, period_clicks: link.click_count }));
+      }
+      
+      // Get click counts for the specified period
+      const { data: clickData, error: clickError } = await supabase
+        .from(this.CLICK_TABLE)
+        .select('link_id')
+        .gte('clicked_at', startDate.toISOString())
+        .lte('clicked_at', endDate.toISOString());
+        
+      if (clickError) {
+        console.error('Error fetching click data:', clickError);
+        throw new Error('클릭 데이터 조회 중 오류가 발생했습니다.');
+      }
+      
+      // Count clicks per link
+      const clickCounts = clickData.reduce((acc: { [key: string]: number }, click) => {
+        acc[click.link_id] = (acc[click.link_id] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Get top link IDs
+      const topLinkIds = Object.entries(clickCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, limit)
+        .map(([linkId]) => linkId);
+        
+      if (topLinkIds.length === 0) {
+        return [];
+      }
+      
+      // Get link details
+      const { data: links, error: linksError } = await supabase
+        .from(this.TABLE_NAME)
+        .select('*')
+        .in('id', topLinkIds);
+        
+      if (linksError) {
+        console.error('Error fetching link details:', linksError);
+        throw new Error('링크 정보 조회 중 오류가 발생했습니다.');
+      }
+      
+      // Combine links with period click counts and sort
+      const linksWithPeriodClicks = (links || []).map(link => ({
+        ...link,
+        period_clicks: clickCounts[link.id] || 0
+      })).sort((a, b) => b.period_clicks - a.period_clicks);
+      
+      return linksWithPeriodClicks;
+    } catch (error) {
+      console.error(`Error in getTopClickedLinksByPeriod for period ${period}:`, error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('인기 링크 조회 중 알 수 없는 오류가 발생했습니다.');
+    }
+  }
+  
+  /**
    * 클릭 수가 많은 순으로 상위 링크들을 가져옵니다.
    * @param limit 가져올 링크 수
    * @param supabaseClient 테스트용 Supabase 클라이언트 (선택적)
@@ -255,6 +369,67 @@ export class LinkService {
   }
 
   /**
+   * 링크를 삭제합니다.
+   * @param linkId 삭제할 링크 ID
+   * @param supabaseClient 테스트용 Supabase 클라이언트 (선택적)
+   */
+  static async deleteLink(
+    linkId: string,
+    supabaseClient?: SupabaseClient,
+  ): Promise<void> {
+    try {
+      const supabase = await this.getSupabaseClient(supabaseClient);
+      
+      // 현재 사용자 확인
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("로그인이 필요합니다.");
+      }
+      
+      // 링크 소유자 확인
+      const { data: link, error: linkError } = await supabase
+        .from(this.TABLE_NAME)
+        .select("user_id")
+        .eq("id", linkId)
+        .single();
+        
+      if (linkError || !link) {
+        throw new Error("링크를 찾을 수 없습니다.");
+      }
+      
+      // 사용자 프로필 확인 (관리자 여부)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      
+      // 소유자가 아니고 관리자도 아닌 경우 거부
+      if (link.user_id !== user.id && profile?.role !== "admin") {
+        throw new Error("이 링크를 삭제할 권한이 없습니다.");
+      }
+      
+      // 링크 삭제 (관련 클릭 데이터는 CASCADE로 자동 삭제)
+      const { error: deleteError } = await supabase
+        .from(this.TABLE_NAME)
+        .delete()
+        .eq("id", linkId);
+        
+      if (deleteError) {
+        console.error("Error deleting link:", deleteError);
+        throw new Error("링크 삭제 중 오류가 발생했습니다.");
+      }
+    } catch (error) {
+      console.error(`Error in deleteLink for linkId ${linkId}:`, error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("링크 삭제 중 알 수 없는 오류가 발생했습니다.");
+    }
+  }
+  
+  /**
    * 특정 링크의 일별 클릭 통계를 가져옵니다.
    * @param linkId 링크 ID
    * @param supabaseClient 테스트용 Supabase 클라이언트 (선택적)
@@ -297,6 +472,145 @@ export class LinkService {
         throw error;
       }
       throw new Error("클릭 통계 조회 중 알 수 없는 오류가 발생했습니다.");
+    }
+  }
+  
+  /**
+   * 마케팅 분석을 위한 상세 통계를 가져옵니다.
+   * @param linkId 링크 ID
+   * @param supabaseClient 테스트용 Supabase 클라이언트 (선택적)
+   * @returns 마케팅 분석 데이터
+   */
+  static async getMarketingAnalytics(
+    linkId: string,
+    supabaseClient?: SupabaseClient,
+  ): Promise<{
+    totalClicks: number;
+    uniqueClicks: number;
+    clicksByHour: { hour: number; clicks: number }[];
+    clicksByDevice: { device: string; clicks: number }[];
+    clicksByCountry: { country: string; clicks: number }[];
+    conversionRate: number;
+    avgClicksPerDay: number;
+    clickTrend: 'up' | 'down' | 'stable';
+  }> {
+    try {
+      const supabase = await this.getSupabaseClient(supabaseClient);
+      
+      // 링크 정보 가져오기
+      const { data: link, error: linkError } = await supabase
+        .from(this.TABLE_NAME)
+        .select("*")
+        .eq("id", linkId)
+        .single();
+        
+      if (linkError || !link) {
+        throw new Error("링크를 찾을 수 없습니다.");
+      }
+      
+      // 모든 클릭 데이터 가져오기
+      const { data: clicks, error: clicksError } = await supabase
+        .from(this.CLICK_TABLE)
+        .select("*")
+        .eq("link_id", linkId)
+        .order("clicked_at", { ascending: true });
+        
+      if (clicksError) {
+        throw new Error("클릭 데이터 조회 중 오류가 발생했습니다.");
+      }
+      
+      const clickData = clicks || [];
+      const totalClicks = clickData.length;
+      
+      // 고유 IP 수 (고유 방문자)
+      const uniqueIPs = new Set(clickData.map(c => c.ip_address)).size;
+      
+      // 시간대별 클릭 분석
+      const clicksByHour = Array.from({ length: 24 }, (_, i) => ({ hour: i, clicks: 0 }));
+      clickData.forEach(click => {
+        const hour = new Date(click.clicked_at).getHours();
+        clicksByHour[hour].clicks++;
+      });
+      
+      // 디바이스별 클릭 분석 (User Agent 기반)
+      const deviceMap: { [key: string]: number } = {};
+      clickData.forEach(click => {
+        if (!click.user_agent) {
+          deviceMap['Unknown'] = (deviceMap['Unknown'] || 0) + 1;
+          return;
+        }
+        
+        const ua = click.user_agent.toLowerCase();
+        let device = 'Desktop';
+        
+        if (/mobile|android|iphone|ipad|phone/i.test(ua)) {
+          device = 'Mobile';
+        } else if (/tablet|ipad/i.test(ua)) {
+          device = 'Tablet';
+        }
+        
+        deviceMap[device] = (deviceMap[device] || 0) + 1;
+      });
+      
+      const clicksByDevice = Object.entries(deviceMap).map(([device, clicks]) => ({
+        device,
+        clicks
+      }));
+      
+      // 국가별 클릭 (예시 - 실제로는 IP 기반 지역 분석 필요)
+      const clicksByCountry = [
+        { country: 'Korea', clicks: Math.floor(totalClicks * 0.7) },
+        { country: 'USA', clicks: Math.floor(totalClicks * 0.2) },
+        { country: 'Others', clicks: Math.floor(totalClicks * 0.1) }
+      ];
+      
+      // 전환율 (예시 - 실제로는 목표 설정 필요)
+      const conversionRate = totalClicks > 0 ? (uniqueIPs / totalClicks) * 100 : 0;
+      
+      // 일평균 클릭
+      const daysSinceCreation = Math.max(1, 
+        Math.floor((Date.now() - new Date(link.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      );
+      const avgClicksPerDay = totalClicks / daysSinceCreation;
+      
+      // 클릭 트렌드 분석 (최근 7일 vs 이전 7일)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      
+      const recentClicks = clickData.filter(c => 
+        new Date(c.clicked_at) >= sevenDaysAgo
+      ).length;
+      
+      const previousClicks = clickData.filter(c => 
+        new Date(c.clicked_at) >= fourteenDaysAgo && 
+        new Date(c.clicked_at) < sevenDaysAgo
+      ).length;
+      
+      let clickTrend: 'up' | 'down' | 'stable' = 'stable';
+      if (recentClicks > previousClicks * 1.1) {
+        clickTrend = 'up';
+      } else if (recentClicks < previousClicks * 0.9) {
+        clickTrend = 'down';
+      }
+      
+      return {
+        totalClicks,
+        uniqueClicks: uniqueIPs,
+        clicksByHour,
+        clicksByDevice,
+        clicksByCountry,
+        conversionRate,
+        avgClicksPerDay,
+        clickTrend
+      };
+    } catch (error) {
+      console.error(`Error in getMarketingAnalytics for link ${linkId}:`, error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('마케팅 분석 데이터 조회 중 알 수 없는 오류가 발생홈습니다.');
     }
   }
 }

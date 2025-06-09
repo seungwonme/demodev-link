@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DailyClickStats } from "@/shared/types/supabase";
+import { DailyClickStats } from "@/shared/types/types";
 import { getLinkClickStats } from "@/features/links/actions/link";
 import {
   LineChart,

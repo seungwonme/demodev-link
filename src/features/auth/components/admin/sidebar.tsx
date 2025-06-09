@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
+import {
   HomeIcon,
   LinkIcon,
   ChartBarIcon,
   UsersIcon,
-  ArrowLeftOnRectangleIcon
+  ArrowLeftOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { signOut } from "@/features/auth/actions/auth";
 import { UserRole } from "@/features/auth/types/profile";
@@ -54,23 +54,17 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
     },
   ];
 
-  const filteredMenuItems = menuItems.filter(item => 
-    item.roles.includes(userRole)
+  const filteredMenuItems = menuItems.filter((item) =>
+    item.roles.includes(userRole),
   );
 
   return (
     <aside className="w-64 bg-white dark:bg-gray-800 shadow-md">
-      <div className="p-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-          DemoDev Admin
-        </h2>
-      </div>
-      
       <nav className="mt-6">
         {filteredMenuItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
-          
+
           return (
             <Link
               key={item.href}

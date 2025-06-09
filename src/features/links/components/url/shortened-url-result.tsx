@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { StringUtils } from "@/shared/utils/utils";
 import { Button } from "@/shared/components/ui/button";
+import { StringUtils } from "@/shared/utils/string";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
@@ -54,7 +54,9 @@ export function ShortenedUrlResult({ shortUrl }: Props) {
       <CheckCircle2 className="h-4 w-4 text-green-600" />
       <AlertDescription>
         <div className="space-y-3">
-          <h3 className="font-medium text-green-900">단축 URL이 생성되었습니다!</h3>
+          <h3 className="font-medium text-green-900">
+            단축 URL이 생성되었습니다!
+          </h3>
 
           <div className="space-y-2">
             <Label htmlFor="shortened-url" className="text-sm text-gray-600">
