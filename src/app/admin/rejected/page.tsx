@@ -13,9 +13,13 @@ export default async function RejectedPage() {
   const { profile } = await AuthService.requireAuth({ requiredStatus: "rejected" });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="max-w-md w-full text-center">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background relative overflow-hidden px-4">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/5 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+      
+      <div className="relative max-w-md w-full text-center">
+        <div className="bg-card/95 backdrop-blur-sm shadow-2xl rounded-lg p-8 border border-border/50">
           <div className="flex justify-center mb-6">
             <div className="h-16 w-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
               <XCircleIcon className="h-8 w-8 text-red-600 dark:text-red-400" />

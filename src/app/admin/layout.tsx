@@ -28,10 +28,12 @@ export default async function AdminLayout({
   // Only show sidebar for approved users
   if (profile?.status === "approved") {
     return (
-      <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
         <AdminSidebar userRole={profile.role || "user"} />
-        <main className="flex-1 overflow-y-auto">
-          <div className="container mx-auto p-6">
+        <main className="lg:pl-64 min-h-screen">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/5 via-transparent to-transparent pointer-events-none" />
+          <div className="relative container mx-auto p-6 pt-20 lg:pt-6">
             {children}
           </div>
         </main>
