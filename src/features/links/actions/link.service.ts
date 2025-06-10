@@ -369,6 +369,44 @@ export class LinkService {
   }
 
   /**
+   * 페이지네이션을 통해 링크들을 가져옵니다.
+   * @param page 현재 페이지 번호 (1부터 시작)
+   * @param pageSize 페이지당 항목 수
+   * @param supabaseClient 테스트용 Supabase 클라이언트 (선택적)
+   * @returns 링크 객체 배열 및 총 링크 수
+   */
+  static async getPaginatedLinks(
+    page: number = 1,
+    pageSize: number = 10,
+    supabaseClient?: SupabaseClient,
+  ): Promise<{ links: Link[]; totalCount: number }> {
+    try {
+      const supabase = await this.getSupabaseClient(supabaseClient);
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      const { data: links, error: linksError, count } = await supabase
+        .from(this.TABLE_NAME)
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(start, end);
+
+      if (linksError) {
+        console.error("Error fetching paginated links:", linksError);
+        throw new Error("페이지네이션 링크 조회 중 오류가 발생했습니다.");
+      }
+
+      return { links: links || [], totalCount: count || 0 };
+    } catch (error) {
+      console.error("Error in getPaginatedLinks:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("페이지네이션 링크 조회 중 알 수 없는 오류가 발생했습니다.");
+    }
+  }
+
+  /**
    * 링크를 삭제합니다.
    * @param linkId 삭제할 링크 ID
    * @param supabaseClient 테스트용 Supabase 클라이언트 (선택적)

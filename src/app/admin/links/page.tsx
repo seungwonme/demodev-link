@@ -27,8 +27,11 @@ import LinkList from "@/features/links/components/link-list";
 // 동적 렌더링 강제 설정 (Supabase 클라이언트 사용으로 인한 Static Generation 방지)
 export const dynamic = "force-dynamic";
 
+const LINKS_PER_PAGE = 10; // 페이지당 표시될 링크 수
+
 export default async function AdminLinksPage() {
-  const initialLinks = await LinkService.getTopLinks(10);
+  // LinkService.getTopLinks 대신 LinkService.getPaginatedLinks 사용
+  const { links: initialLinks, totalCount } = await LinkService.getPaginatedLinks(1, LINKS_PER_PAGE);
 
   return (
     <div>
@@ -42,7 +45,7 @@ export default async function AdminLinksPage() {
 
       {/* Links list */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <LinkList initialLinks={initialLinks} />
+        <LinkList initialLinks={initialLinks} totalCount={totalCount} linksPerPage={LINKS_PER_PAGE} />
       </div>
     </div>
   );

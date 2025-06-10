@@ -6,8 +6,8 @@ import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { deleteLink } from "@/features/links/actions/delete-link";
 import { updateLinkDescription } from "@/features/links/actions/update-link";
-import { getAllLinksForAnalytics } from "@/features/analytics/actions/get-analytics";
 import LinkStats from "@/features/analytics/components/link-stats";
+import { LinkService } from "@/features/links/actions/link.service";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,11 +24,14 @@ import { toast } from "sonner";
 
 interface LinkListProps {
   initialLinks: Link[];
+  totalCount: number;
+  linksPerPage: number;
 }
 
-export default function LinkList({ initialLinks }: LinkListProps) {
+export default function LinkList({ initialLinks, totalCount, linksPerPage }: LinkListProps) {
   const [links, setLinks] = useState<Link[]>(initialLinks);
-  const [showAll, setShowAll] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(initialLinks.length < totalCount);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [baseUrl, setBaseUrl] = useState<string>("");
   const [editingLink, setEditingLink] = useState<string | null>(null);
@@ -38,20 +41,27 @@ export default function LinkList({ initialLinks }: LinkListProps) {
     setBaseUrl(window.location.origin);
   }, []);
 
-  const handleShowAll = async () => {
-    if (!showAll) {
-      const result = await getAllLinksForAnalytics();
-      if (result.success && result.data) {
-        setLinks(result.data as Link[]);
-      }
-    } else {
-      setLinks(initialLinks);
-    }
-    setShowAll(!showAll);
+  useEffect(() => {
+    const loadMoreLinks = async () => {
+      if (currentPage === 1) return;
+
+      const { links: newLinks, totalCount: newTotalCount } = await LinkService.getPaginatedLinks(
+        currentPage,
+        linksPerPage,
+      );
+
+      setLinks((prevLinks: Link[]) => [...prevLinks, ...newLinks]);
+      setHasMore(links.length + newLinks.length < newTotalCount);
+    };
+
+    loadMoreLinks();
+  }, [currentPage, linksPerPage]);
+
+  const handleLoadMore = () => {
+    setCurrentPage((prevPage: number) => prevPage + 1);
   };
 
   const formatDate = (dateString: string) => {
-    // ISO 표준 형식 사용 (hydration 오류 방지)
     return new Date(dateString).toISOString().split("T")[0];
   };
   
@@ -84,7 +94,6 @@ export default function LinkList({ initialLinks }: LinkListProps) {
         return;
       }
       
-      // 성공적으로 업데이트되면 로컬 상태 업데이트
       setLinks(links.map(link => 
         link.id === linkId 
           ? { ...link, description: editDescription }
@@ -99,17 +108,9 @@ export default function LinkList({ initialLinks }: LinkListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">
-          {showAll ? "모든 링크" : "상위 10개 링크"}
-        </h2>
-        <Button onClick={handleShowAll}>
-          {showAll ? "상위 10개만 보기" : "전체 보기"}
-        </Button>
-      </div>
-
+      <h2 className="text-2xl font-bold">모든 링크 ({totalCount}개)</h2>
       <div className="grid gap-4">
-        {links.map((link) => (
+        {links.map((link: Link) => (
           <Card
             key={link.id}
             className="hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -123,10 +124,10 @@ export default function LinkList({ initialLinks }: LinkListProps) {
                       <input
                         type="text"
                         value={editDescription}
-                        onChange={(e) => setEditDescription(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditDescription(e.target.value)}
                         className="flex-1 px-2 py-1 text-sm border rounded"
                         placeholder="설명을 입력하세요"
-                        onKeyDown={(e) => {
+                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                           if (e.key === 'Enter') {
                             handleUpdateDescription(link.id);
                           } else if (e.key === 'Escape') {
@@ -235,6 +236,13 @@ export default function LinkList({ initialLinks }: LinkListProps) {
           </Card>
         ))}
       </div>
+      {hasMore && (
+        <div className="flex justify-center mt-4">
+          <Button onClick={handleLoadMore} disabled={!hasMore}>
+            더 불러오기 ({links.length}/{totalCount})
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
