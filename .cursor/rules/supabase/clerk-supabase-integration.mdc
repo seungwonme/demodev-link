@@ -1,0 +1,290 @@
+# Clerk + Supabase Integration Rules
+
+This document defines critical rules when using Clerk for authentication and Supabase for database operations.
+
+## Database Schema Rules
+
+### profiles Table Structure
+
+**CRITICAL**: The `profiles` table has the following structure:
+
+```sql
+CREATE TABLE profiles (
+  id TEXT PRIMARY KEY,              -- UUID, this is the PRIMARY KEY
+  clerk_user_id TEXT UNIQUE,        -- Clerk user ID (e.g., user_2xxxxx)
+  email TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Key Points**:
+- `id` is the PRIMARY KEY (UUID)
+- `clerk_user_id` is UNIQUE but NOT the primary key
+- Other tables reference `profiles.id`, NOT `clerk_user_id`
+
+### Foreign Key Relationships
+
+**CRITICAL RULE**: When creating records that reference users:
+
+❌ **WRONG**:
+```typescript
+await supabase.from("links").insert({
+  user_id: clerkUserId,  // WRONG! This is clerk_user_id, not profiles.id
+  // ...
+});
+```
+
+✅ **CORRECT**:
+```typescript
+// Step 1: Get the profile id from clerk_user_id
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("id")
+  .eq("clerk_user_id", clerkUserId)
+  .single();
+
+// Step 2: Use profile.id as foreign key
+await supabase.from("links").insert({
+  user_id: profile.id,  // CORRECT! Use profiles.id
+  // ...
+});
+```
+
+## Profile Management Patterns
+
+### 1. Getting Profile ID from Clerk User
+
+Always fetch the profile `id` when you have a Clerk user ID:
+
+```typescript
+const { data: profile, error } = await supabase
+  .from("profiles")
+  .select("id, clerk_user_id, email")  // Include id!
+  .eq("clerk_user_id", clerkUserId)
+  .single();
+
+// Handle PGRST116 error (record not found)
+if (error && error.code !== 'PGRST116') {
+  throw error;
+}
+
+const profileId = profile?.id;
+```
+
+### 2. Creating Profile with Auto-Generated ID
+
+When creating a new profile, always return the generated `id`:
+
+```typescript
+const { data: newProfile, error } = await supabase
+  .from("profiles")
+  .insert({
+    clerk_user_id: clerkUserId,
+    email: userEmail,
+  })
+  .select("id")  // IMPORTANT: Get the generated id
+  .single();
+
+const profileId = newProfile.id;  // Use this for foreign keys
+```
+
+### 3. Profile Auto-Creation Pattern
+
+When a user performs an action requiring a profile:
+
+```typescript
+// Check if profile exists
+const { data: existingProfile, error: profileCheckError } = await supabase
+  .from("profiles")
+  .select("id, clerk_user_id")
+  .eq("clerk_user_id", clerkUserId)
+  .single();
+
+// PGRST116 means record not found (this is normal)
+if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+  throw new Error("프로필 확인 중 오류가 발생했습니다.");
+}
+
+let profileId: string;
+
+if (!existingProfile) {
+  // Create new profile
+  const { data: newProfile, error: createError } = await supabase
+    .from("profiles")
+    .insert({
+      clerk_user_id: clerkUserId,
+      email: userEmail,
+    })
+    .select("id")
+    .single();
+
+  if (createError || !newProfile) {
+    throw new Error("사용자 프로필 생성 중 오류가 발생했습니다.");
+  }
+
+  profileId = newProfile.id;
+} else {
+  profileId = existingProfile.id;
+}
+
+// Now use profileId for foreign key references
+```
+
+## Common Mistakes to Avoid
+
+### ❌ Mistake 1: Using clerk_user_id as Foreign Key
+
+```typescript
+// WRONG: Using Clerk user ID directly
+await supabase.from("links").insert({
+  user_id: user.userId,  // This is clerk_user_id, not profiles.id!
+});
+```
+
+**Error you'll see**:
+```
+insert or update on table "links" violates foreign key constraint "links_user_id_fkey"
+Key (user_id)=(user_2xxxxx) is not present in table "profiles".
+```
+
+### ❌ Mistake 2: Not Selecting ID When Querying Profile
+
+```typescript
+// WRONG: Not selecting id
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("clerk_user_id")  // Missing id!
+  .eq("clerk_user_id", clerkUserId)
+  .single();
+
+// Later: Can't use profile.id because it wasn't selected
+```
+
+### ❌ Mistake 3: Not Handling PGRST116 Error
+
+```typescript
+// WRONG: Treating "not found" as an error
+const { data: profile, error } = await supabase
+  .from("profiles")
+  .select("id")
+  .eq("clerk_user_id", clerkUserId)
+  .single();
+
+if (error) {
+  throw error;  // WRONG! This will throw on PGRST116 (not found)
+}
+```
+
+**CORRECT**:
+```typescript
+if (error && error.code !== 'PGRST116') {
+  throw error;  // Only throw if it's a real error
+}
+
+if (!profile) {
+  // Profile doesn't exist, create it
+}
+```
+
+## Clerk User ID vs Profile ID
+
+**Always remember**:
+
+| Field | Type | Purpose | Example |
+|-------|------|---------|---------|
+| `clerk_user_id` | TEXT | Clerk's user identifier | `user_2xxxxx` |
+| `profile.id` | TEXT (UUID) | Database primary key | `3a6c7e86-0dd4-43cd-9634-3ac4f392c4e5` |
+
+**When to use each**:
+- Use `clerk_user_id` to FIND a profile in the database
+- Use `profile.id` as FOREIGN KEY in other tables
+
+## Supabase Client Configuration
+
+### Server-Side Client
+
+For database operations that don't require RLS:
+
+```typescript
+// src/lib/supabase/server.ts
+import { createServerClient } from "@supabase/ssr";
+
+// Uses NEXT_PUBLIC_SUPABASE_ANON_KEY
+// Good for most server operations
+const supabase = await createClient();
+```
+
+### Service Role Client (Admin Operations)
+
+For operations that need to bypass RLS or require elevated permissions:
+
+```typescript
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!  // Service role key
+);
+```
+
+**When to use Service Role**:
+- Profile auto-creation in server actions
+- Admin operations
+- Webhook handlers
+- Migrations
+
+## Testing Considerations
+
+When writing tests, inject the profile ID:
+
+```typescript
+// Test setup
+const testProfileId = "test-profile-id-uuid";
+
+// Pass to function
+await LinkService.createShortLink(
+  data,
+  supabaseClient,
+  testProfileId  // Use profile.id, not clerk_user_id
+);
+```
+
+## Migration from Supabase Auth to Clerk
+
+When migrating:
+1. ✅ Keep `profiles.id` as PRIMARY KEY
+2. ✅ Add `clerk_user_id` column (UNIQUE)
+3. ✅ Update all foreign keys to reference `profiles.id`
+4. ✅ Never change foreign keys to reference `clerk_user_id`
+
+## Checklist Before Committing
+
+When working with user-related data:
+
+- [ ] Am I using `profile.id` for foreign keys?
+- [ ] Did I select `id` when querying profiles?
+- [ ] Did I handle PGRST116 error correctly?
+- [ ] Did I use the correct Supabase client (server/service role)?
+- [ ] If creating a profile, did I return and use the generated `id`?
+
+## Quick Reference
+
+```typescript
+// ✅ CORRECT Pattern
+const user = await ClerkAuthService.requireAuth();
+const clerkUserId = user.userId;
+
+// Get profile ID
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("id")
+  .eq("clerk_user_id", clerkUserId)
+  .single();
+
+// Use profile.id as foreign key
+await supabase.from("links").insert({
+  user_id: profile.id,  // ✅ Use profile.id
+  // ...
+});
+```

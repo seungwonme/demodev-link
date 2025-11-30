@@ -13,6 +13,8 @@ import { Switch } from "@/shared/components/ui/switch";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { useUser } from "@clerk/nextjs";
+import { UTMBuilder } from "@/features/links/components/utm/utm-builder";
+import { UTMParameters, addUTMParameters, isUTMParametersEmpty } from "@/features/links/types/utm";
 
 export default function UrlInputForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +24,7 @@ export default function UrlInputForm() {
   const [description, setDescription] = useState("");
   const [customSlug, setCustomSlug] = useState("");
   const [showCustomSlug, setShowCustomSlug] = useState(false);
+  const [utmParams, setUTMParams] = useState<UTMParameters>({});
   const { isLoaded, isSignedIn } = useUser();
 
   function handleSuccess(url: string) {
@@ -32,6 +35,7 @@ export default function UrlInputForm() {
     setDescription("");
     setCustomSlug("");
     setShowCustomSlug(false);
+    setUTMParams({});
   }
 
   function handleError(message: string) {
@@ -72,8 +76,13 @@ export default function UrlInputForm() {
         return;
       }
 
-      const result = await shortenUrl({ 
-        original_url: inputValue,
+      // UTM 파라미터가 있으면 원본 URL에 추가
+      const finalUrl = !isUTMParametersEmpty(utmParams)
+        ? addUTMParameters(inputValue, utmParams)
+        : inputValue;
+
+      const result = await shortenUrl({
+        original_url: finalUrl,
         custom_slug: showCustomSlug && customSlug.trim() ? customSlug.trim() : undefined,
         description: description.trim() || undefined
       });
@@ -192,6 +201,15 @@ export default function UrlInputForm() {
               </p>
             </div>
 
+            {/* UTM Builder Section */}
+            <div className="space-y-2">
+              <UTMBuilder
+                originalUrl={inputValue}
+                onUTMChange={setUTMParams}
+                disabled={isLoading}
+              />
+            </div>
+
             {/* Custom Slug Toggle */}
             <div className="p-4 rounded-lg bg-muted/30 space-y-4">
               <div className="flex items-center justify-between">
@@ -213,7 +231,7 @@ export default function UrlInputForm() {
                   disabled={isLoading}
                 />
               </div>
-              
+
               {showCustomSlug && (
                 <div className="space-y-3 animate-in slide-in-from-top-2">
                   <div className="flex items-center space-x-2 p-3 rounded-md bg-background/50">

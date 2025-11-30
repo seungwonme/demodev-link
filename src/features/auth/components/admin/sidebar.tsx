@@ -1,21 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Home,
   Link2,
   BarChart3,
   Users,
-  LogOut,
   Settings,
-  Sparkles,
   Moon,
   Sun,
   Menu,
   X,
 } from "lucide-react";
-import { useClerk } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
 import { UserRole } from "@/features/auth/services/clerk-auth.service";
 import { cn } from "@/lib/utils";
 import { Button } from "@/shared/components/ui/button";
@@ -28,18 +26,11 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ userRole }: AdminSidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { signOut } = useClerk();
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => {
     return pathname === path || pathname.startsWith(path + "/");
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-    router.push("/");
   };
 
   const menuItems = [
@@ -172,33 +163,24 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
             </Button>
           </div>
 
-          {/* User Info & Logout */}
+          {/* Clerk User Button */}
           <div className="px-4 py-3 rounded-lg bg-muted/30">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-white" />
-              </div>
+            <div className="flex items-center gap-3">
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "h-9 w-9",
+                    userButtonTrigger: "focus:shadow-none"
+                  }
+                }}
+                showName
+              />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {userRole === "admin" ? "관리자" : "사용자"}
-                </p>
                 <p className="text-xs text-muted-foreground">
                   {userRole === "admin" ? "전체 권한" : "일반 권한"}
                 </p>
               </div>
             </div>
-            
-            <form action={handleLogout}>
-              <Button
-                type="submit"
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                로그아웃
-              </Button>
-            </form>
           </div>
         </div>
       </aside>
@@ -235,19 +217,24 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
               );
             })}
           </nav>
-          
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <form action={handleLogout}>
-              <Button
-                type="submit"
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-destructive hover:bg-destructive/10"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                로그아웃
-              </Button>
-            </form>
+
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border/50 bg-card/95">
+            <div className="flex items-center gap-3 px-2 py-2">
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "h-9 w-9",
+                    userButtonTrigger: "focus:shadow-none"
+                  }
+                }}
+                showName
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground">
+                  {userRole === "admin" ? "전체 권한" : "일반 권한"}
+                </p>
+              </div>
+            </div>
           </div>
         </aside>
       </div>

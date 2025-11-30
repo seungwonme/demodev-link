@@ -1,5 +1,5 @@
-- [ ] 현재 펜딩 시에 로그아웃이 불가능해 ui도 해치지 않으면서 가능하게 만들어줘
-- [ ] UTM 빌더 https://ga-dev-tools.google/campaign-url-builder/
+- [x] 현재 펜딩 시에 로그아웃이 불가능해 ui도 해치지 않으면서 가능하게 만들어줘
+- [x] UTM 빌더 https://ga-dev-tools.google/campaign-url-builder/
 - [ ] 캠페인 설정 기능 추가
   - [ ] 특히 Youtube, 상세 보기 시 Youtube의 경우에는 링크를 인식하여 영상이 임베드되도록 만들어줘
 - [ ] 자주 사용하는 링크 기능 추가 -> 캠페인 생성 시 자주 사용하는 링크 목록을 추가할 수 있게 만들어줘

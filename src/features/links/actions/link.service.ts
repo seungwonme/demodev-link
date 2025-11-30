@@ -46,9 +46,45 @@ export class LinkService {
 
       // Clerk 인증 (테스트 환경은 스킵)
       let userId = clerkUserId || null;
+      let userEmail: string | null = null;
+
       if (!supabaseClient && process.env.NODE_ENV !== "test" && !process.env.VITEST) {
         const user = await ClerkAuthService.requireAuth({ requiredStatus: "approved" });
-        userId = user.userId;
+        const clerkUserId = user.userId;
+        userEmail = user.email;
+
+        // 프로필 존재 확인 및 자동 생성 (id를 가져와야 함)
+        const { data: existingProfile, error: profileCheckError } = await supabase
+          .from("profiles")
+          .select("id, clerk_user_id")
+          .eq("clerk_user_id", clerkUserId)
+          .single();
+
+        // PGRST116: 레코드가 없는 경우 (정상적인 상황)
+        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+          console.error("Error checking profile:", profileCheckError);
+          throw new Error("프로필 확인 중 오류가 발생했습니다.");
+        }
+
+        if (!existingProfile) {
+          const { data: newProfile, error: profileError } = await supabase
+            .from("profiles")
+            .insert({
+              clerk_user_id: clerkUserId,
+              email: userEmail,
+            })
+            .select("id")
+            .single();
+
+          if (profileError || !newProfile) {
+            console.error("Error creating profile:", profileError);
+            throw new Error("사용자 프로필 생성 중 오류가 발생했습니다.");
+          }
+
+          userId = newProfile.id;
+        } else {
+          userId = existingProfile.id;
+        }
       }
 
       let slug: string;

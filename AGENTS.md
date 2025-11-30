@@ -108,9 +108,14 @@ src/
 
 ### Database Schema
 
-**profiles** table (simplified - no auth fields):
+**⚠️ CRITICAL: Profile ID vs Clerk User ID**
 
-- `clerk_user_id` (TEXT, PRIMARY KEY): Clerk user ID
+The `profiles` table uses a UUID as PRIMARY KEY, NOT the Clerk user ID. Always use `profiles.id` for foreign key references.
+
+**profiles** table:
+
+- `id` (TEXT, PRIMARY KEY): UUID - **USE THIS for foreign keys**
+- `clerk_user_id` (TEXT, UNIQUE): Clerk user ID - used to FIND profiles
 - `email` (TEXT): User email
 - `created_at`, `updated_at`: Timestamps
 
@@ -119,7 +124,7 @@ src/
 - `id`: Link ID
 - `slug`: Shortened URL slug
 - `original_url`: Original URL
-- `user_id` (TEXT): References `profiles.clerk_user_id`
+- `user_id` (TEXT): **References `profiles.id`** (NOT clerk_user_id)
 - `click_count`: Click count
 - `created_at`: Creation time
 

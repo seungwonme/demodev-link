@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useUser, UserButton } from "@clerk/nextjs";
 
 // NavigationContent 컴포넌트를 별도로 분리
 function NavigationContent() {
@@ -25,6 +26,7 @@ function NavigationContent() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const { isSignedIn, isLoaded } = useUser();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -101,17 +103,30 @@ function NavigationContent() {
                 <span className="sr-only">테마 변경</span>
               </Button>
 
-              {/* CTA Button */}
-              <Button 
-                size="sm" 
-                className="hidden lg:flex h-10 px-6 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-105" 
-                asChild
-              >
-                <Link href="/admin/register">
-                  <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
-                  시작하기
-                </Link>
-              </Button>
+              {/* User Button or CTA */}
+              {isLoaded && (
+                isSignedIn ? (
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-9 w-9",
+                        userButtonTrigger: "focus:shadow-none hover:scale-110 transition-transform duration-300"
+                      }
+                    }}
+                  />
+                ) : (
+                  <Button
+                    size="sm"
+                    className="hidden lg:flex h-10 px-6 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-105"
+                    asChild
+                  >
+                    <Link href="/admin/register">
+                      <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
+                      시작하기
+                    </Link>
+                  </Button>
+                )
+              )}
             </div>
           </div>
 
@@ -171,17 +186,33 @@ function NavigationContent() {
               );
             })}
 
-            <div className="pt-4 mt-4 border-t border-primary/10">
-              <Button 
-                className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300" 
-                asChild
-              >
-                <Link href="/admin/register" onClick={() => setIsOpen(false)}>
-                  <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
-                  시작하기
-                </Link>
-              </Button>
-            </div>
+            {isLoaded && (
+              <div className="pt-4 mt-4 border-t border-primary/10">
+                {isSignedIn ? (
+                  <div className="flex items-center gap-3 px-2 py-2">
+                    <UserButton
+                      appearance={{
+                        elements: {
+                          avatarBox: "h-9 w-9",
+                          userButtonTrigger: "focus:shadow-none"
+                        }
+                      }}
+                      showName
+                    />
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300"
+                    asChild
+                  >
+                    <Link href="/admin/register" onClick={() => setIsOpen(false)}>
+                      <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
+                      시작하기
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
