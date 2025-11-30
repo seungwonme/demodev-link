@@ -4,14 +4,20 @@ import { useState, useEffect } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Card, CardContent } from "@/shared/components/ui/card";
-import { CheckCircle2, Copy, Check, ExternalLink, QrCode, Share2 } from "lucide-react";
+import { CheckCircle2, Copy, Check, ExternalLink, QrCode, Share2, FileText } from "lucide-react";
+import { TemplateSaveDialog } from "@/features/templates/components/template-save-dialog";
+import type { UTMParameters } from "@/features/links/types/utm";
 
 interface Props {
   shortUrl: string;
+  originalUrl?: string;
+  description?: string;
+  utmParams?: UTMParameters;
 }
 
-export function ShortenedUrlResult({ shortUrl }: Props) {
+export function ShortenedUrlResult({ shortUrl, originalUrl, description, utmParams }: Props) {
   const [isCopied, setIsCopied] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
   // 복사 상태 타이머
   useEffect(() => {
@@ -93,7 +99,7 @@ export function ShortenedUrlResult({ shortUrl }: Props) {
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Button
               variant="outline"
               onClick={copyToClipboard}
@@ -111,7 +117,7 @@ export function ShortenedUrlResult({ shortUrl }: Props) {
                 </>
               )}
             </Button>
-            
+
             <Button
               variant="outline"
               onClick={() => window.open(shortUrl, "_blank")}
@@ -120,7 +126,7 @@ export function ShortenedUrlResult({ shortUrl }: Props) {
               <ExternalLink className="mr-2 h-4 w-4 group-hover:text-primary transition-colors" />
               링크 열기
             </Button>
-            
+
             <Button
               variant="outline"
               onClick={shareUrl}
@@ -129,6 +135,17 @@ export function ShortenedUrlResult({ shortUrl }: Props) {
               <Share2 className="mr-2 h-4 w-4 group-hover:text-primary transition-colors" />
               공유하기
             </Button>
+
+            {originalUrl && (
+              <Button
+                variant="outline"
+                onClick={() => setShowSaveDialog(true)}
+                className="w-full hover:bg-primary/5 hover:border-primary/50 group"
+              >
+                <FileText className="mr-2 h-4 w-4 group-hover:text-primary transition-colors" />
+                템플릿 저장
+              </Button>
+            )}
           </div>
 
           {/* QR Code Hint */}
@@ -140,6 +157,17 @@ export function ShortenedUrlResult({ shortUrl }: Props) {
           </div>
         </div>
       </CardContent>
+
+      {/* Template Save Dialog */}
+      {originalUrl && (
+        <TemplateSaveDialog
+          open={showSaveDialog}
+          onOpenChange={setShowSaveDialog}
+          defaultUrl={originalUrl}
+          defaultDescription={description}
+          defaultUTMParams={utmParams}
+        />
+      )}
     </Card>
   );
 }

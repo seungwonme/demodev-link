@@ -15,10 +15,16 @@ import { Card, CardContent } from "@/shared/components/ui/card";
 import { useUser } from "@clerk/nextjs";
 import { UTMBuilder } from "@/features/links/components/utm/utm-builder";
 import { UTMParameters, addUTMParameters, isUTMParametersEmpty } from "@/features/links/types/utm";
+import { TemplateSelector } from "@/features/templates/components/template-selector";
 
 export default function UrlInputForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
+  const [lastCreatedLink, setLastCreatedLink] = useState<{
+    originalUrl: string;
+    description: string;
+    utmParams: UTMParameters;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [description, setDescription] = useState("");
@@ -46,6 +52,16 @@ export default function UrlInputForm() {
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     setInputValue(e.target.value);
     if (error) setError(null); // 사용자가 입력 시 이전 오류 메시지 제거
+  }
+
+  function handleTemplateSelect(template: {
+    url: string;
+    description: string;
+    utmParams: UTMParameters;
+  }) {
+    setInputValue(template.url);
+    setDescription(template.description);
+    setUTMParams(template.utmParams);
   }
 
   async function handleSubmit() {
@@ -86,6 +102,14 @@ export default function UrlInputForm() {
         custom_slug: showCustomSlug && customSlug.trim() ? customSlug.trim() : undefined,
         description: description.trim() || undefined
       });
+
+      // 링크 정보 저장 (템플릿 저장용)
+      setLastCreatedLink({
+        originalUrl: inputValue,
+        description: description.trim(),
+        utmParams: utmParams,
+      });
+
       handleSuccess(result.shortUrl);
     } catch (error) {
       console.error("URL 단축 오류:", error);
@@ -142,6 +166,14 @@ export default function UrlInputForm() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
         <CardContent className="relative p-8">
           <form action={handleSubmit} className="space-y-6">
+            {/* Template Selector */}
+            <div className="space-y-3">
+              <TemplateSelector
+                onSelect={handleTemplateSelect}
+                disabled={isLoading}
+              />
+            </div>
+
             {/* Main URL Input */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -290,7 +322,12 @@ export default function UrlInputForm() {
       {/* Success Result */}
       {shortUrl && (
         <div className="animate-in slide-in-from-bottom-3">
-          <ShortenedUrlResult shortUrl={shortUrl} />
+          <ShortenedUrlResult
+            shortUrl={shortUrl}
+            originalUrl={lastCreatedLink?.originalUrl}
+            description={lastCreatedLink?.description}
+            utmParams={lastCreatedLink?.utmParams}
+          />
         </div>
       )}
     </div>

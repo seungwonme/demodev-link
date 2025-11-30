@@ -12,6 +12,8 @@ import {
   Sun,
   Menu,
   X,
+  FileText,
+  FolderKanban,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { UserRole } from "@/features/auth/services/clerk-auth.service";
@@ -44,6 +46,18 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
       name: "링크 관리",
       href: "/admin/links",
       icon: Link2,
+      roles: ["user", "admin"],
+    },
+    {
+      name: "캠페인",
+      href: "/admin/campaigns",
+      icon: FolderKanban,
+      roles: ["user", "admin"],
+    },
+    {
+      name: "템플릿",
+      href: "/admin/templates",
+      icon: FileText,
       roles: ["user", "admin"],
     },
     {

@@ -19,8 +19,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/shared/components/ui/alert-dialog";
-import { Trash2, Copy, ExternalLink, BarChart3, Edit2, Calendar } from "lucide-react";
+import { Trash2, Copy, ExternalLink, BarChart3, Edit2, Calendar, Youtube, FolderPlus } from "lucide-react";
 import { toast } from "sonner";
+import { isYouTubeUrl, getYouTubeVideoId } from "../utils/youtube";
+import { YouTubeEmbed } from "./youtube/youtube-embed";
+import { YouTubeThumbnail } from "./youtube/youtube-thumbnail";
+import { AddToCampaignDialog } from "@/features/campaigns/components/add-to-campaign-dialog";
 
 interface LinkListProps {
   initialLinks: Link[];
@@ -38,6 +42,9 @@ export default function LinkList({ initialLinks }: LinkListProps) {
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [expandedYouTube, setExpandedYouTube] = useState<string | null>(null);
+  const [showAddToCampaign, setShowAddToCampaign] = useState(false);
+  const [selectedLinkForCampaign, setSelectedLinkForCampaign] = useState<string | null>(null);
 
   useEffect(() => {
     setBaseUrl(window.location.origin);
@@ -276,7 +283,24 @@ export default function LinkList({ initialLinks }: LinkListProps) {
             <CardContent className="p-4">
               <div className="flex justify-between items-start">
                 <div className="flex-1 mr-4">
-                  <p className="font-medium break-all">{link.original_url}</p>
+                  <div className="flex items-center gap-3">
+                    {/* YouTube 썸네일 (YouTube URL인 경우) */}
+                    {isYouTubeUrl(link.original_url) && (
+                      <YouTubeThumbnail
+                        videoId={getYouTubeVideoId(link.original_url) || ""}
+                        size="sm"
+                        onClick={() => setExpandedYouTube(expandedYouTube === link.id ? null : link.id)}
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        {isYouTubeUrl(link.original_url) && (
+                          <Youtube className="h-4 w-4 text-red-600 flex-shrink-0" />
+                        )}
+                        <p className="font-medium break-all">{link.original_url}</p>
+                      </div>
+                    </div>
+                  </div>
                   {editingLink === link.id ? (
                     <div className="mt-2 flex items-center gap-2">
                       <input
@@ -366,6 +390,17 @@ export default function LinkList({ initialLinks }: LinkListProps) {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => {
+                        setSelectedLinkForCampaign(link.id);
+                        setShowAddToCampaign(true);
+                      }}
+                    >
+                      <FolderPlus className="h-4 w-4" />
+                      캠페인
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => setSelectedLink(selectedLink?.id === link.id ? null : link)}
                     >
                       <BarChart3 className="h-4 w-4" />
@@ -396,6 +431,16 @@ export default function LinkList({ initialLinks }: LinkListProps) {
                   </div>
                 </div>
               </div>
+              {/* YouTube 임베드 (확장 시) */}
+              {expandedYouTube === link.id && isYouTubeUrl(link.original_url) && (
+                <div className="mt-4 border-t pt-4">
+                  <YouTubeEmbed
+                    videoId={getYouTubeVideoId(link.original_url) || ""}
+                    title={link.description || undefined}
+                    className="max-w-2xl"
+                  />
+                </div>
+              )}
               {selectedLink?.id === link.id && (
                 <div className="mt-4 border-t pt-4">
                   <LinkStats linkId={link.id} dateRange={getDateRange()} />
@@ -405,6 +450,18 @@ export default function LinkList({ initialLinks }: LinkListProps) {
           </Card>
         ))}
       </div>
+
+      {/* Add to Campaign Dialog */}
+      {selectedLinkForCampaign && (
+        <AddToCampaignDialog
+          open={showAddToCampaign}
+          onOpenChange={setShowAddToCampaign}
+          linkId={selectedLinkForCampaign}
+          onSuccess={() => {
+            setSelectedLinkForCampaign(null);
+          }}
+        />
+      )}
     </div>
   );
 }

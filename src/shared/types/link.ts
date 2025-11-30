@@ -12,6 +12,13 @@ export interface CreateLinkDTO {
   original_url: string;
   custom_slug?: string;
   description?: string;
+  utm_params?: {
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_term?: string;
+    utm_content?: string;
+  };
 }
 
 export interface LinkResponse {

@@ -87,8 +87,23 @@ export class LinkService {
         }
       }
 
+      // UTM 파라미터를 URL에 추가
+      let finalUrl = data.original_url;
+      if (data.utm_params) {
+        const url = new URL(data.original_url);
+        const { utm_source, utm_medium, utm_campaign, utm_term, utm_content } = data.utm_params;
+
+        if (utm_source) url.searchParams.set('utm_source', utm_source);
+        if (utm_medium) url.searchParams.set('utm_medium', utm_medium);
+        if (utm_campaign) url.searchParams.set('utm_campaign', utm_campaign);
+        if (utm_term) url.searchParams.set('utm_term', utm_term);
+        if (utm_content) url.searchParams.set('utm_content', utm_content);
+
+        finalUrl = url.toString();
+      }
+
       let slug: string;
-      
+
       // Check if custom slug is provided
       if (data.custom_slug) {
         // Validate custom slug format
@@ -118,7 +133,7 @@ export class LinkService {
         .insert([
           {
             slug,
-            original_url: data.original_url,
+            original_url: finalUrl,
             description: data.description || null,
             click_count: 0,
             user_id: userId,
