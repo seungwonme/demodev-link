@@ -139,84 +139,86 @@ export default async function AdminDashboard() {
         )}
 
         {/* Welcome Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold gradient-text mb-2">
-            안녕하세요, {profile?.role === "admin" ? "관리자" : "사용자"}님!
+        <div className="mb-10 animate-in">
+          <h1 className="text-4xl sm:text-5xl font-black mb-3">
+            <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient-x bg-300%">
+              안녕하세요, {profile?.role === "admin" ? "관리자" : "사용자"}님!
+            </span>
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-lg text-muted-foreground font-light">
             오늘의 링크 활동과 통계를 확인하세요
           </p>
         </div>
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="border-border/50 overflow-hidden transition-shadow hover:shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+          <Card className="group backdrop-blur-xl bg-background/60 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:scale-[1.02] overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">총 링크</CardTitle>
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Link2 className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm font-semibold">총 링크</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
+                <Link2 className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent className="relative">
-              <div className="text-2xl font-bold">{totalLinks || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-3xl font-black bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{totalLinks || 0}</div>
+              <p className="text-sm text-muted-foreground mt-1 font-medium">
                 생성된 단축 URL
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 overflow-hidden transition-shadow hover:shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent pointer-events-none" />
+          <Card className="group backdrop-blur-xl bg-background/60 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-2xl hover:shadow-accent/20 hover:scale-[1.02] overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">총 클릭</CardTitle>
-              <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                <MousePointerClick className="h-4 w-4 text-accent" />
+              <CardTitle className="text-sm font-semibold">총 클릭</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-accent/30 group-hover:scale-110 transition-transform">
+                <MousePointerClick className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent className="relative">
-              <div className="text-2xl font-bold">{totalClicks || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-3xl font-black bg-gradient-to-br from-accent to-primary bg-clip-text text-transparent">{totalClicks || 0}</div>
+              <p className="text-sm text-muted-foreground mt-1 font-medium">
                 전체 방문자 수
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 overflow-hidden transition-shadow hover:shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent pointer-events-none" />
+          <Card className="group backdrop-blur-xl bg-background/60 border-green-500/20 hover:border-green-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/20 hover:scale-[1.02] overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">평균 클릭</CardTitle>
-              <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <Activity className="h-4 w-4 text-green-600" />
+              <CardTitle className="text-sm font-semibold">평균 클릭</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
+                <Activity className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent className="relative">
-              <div className="text-2xl font-bold">{avgClicksPerLink}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-3xl font-black bg-gradient-to-br from-green-500 to-green-600 bg-clip-text text-transparent">{avgClicksPerLink}</div>
+              <p className="text-sm text-muted-foreground mt-1 font-medium">
                 링크당 평균 클릭
               </p>
             </CardContent>
           </Card>
 
           {profile?.role === "admin" && (
-            <Card className="border-border/50 overflow-hidden transition-shadow hover:shadow-lg">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none" />
+            <Card className="group backdrop-blur-xl bg-background/60 border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/20 hover:scale-[1.02] overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">승인 대기</CardTitle>
-                <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                  <Users className="h-4 w-4 text-orange-600" />
+                <CardTitle className="text-sm font-semibold">승인 대기</CardTitle>
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+                  <Users className="h-5 w-5 text-white" />
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                <div className="text-2xl font-bold">{pendingUsers}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <div className="text-3xl font-black bg-gradient-to-br from-orange-500 to-orange-600 bg-clip-text text-transparent">{pendingUsers}</div>
+                <p className="text-sm text-muted-foreground mt-1 font-medium">
                   새로운 사용자
                 </p>
                 {pendingUsers > 0 && (
                   <Button
                     size="sm"
                     variant="link"
-                    className="p-0 h-auto mt-2"
+                    className="p-0 h-auto mt-2 text-orange-600 hover:text-orange-700"
                     asChild
                   >
                     <Link href="/admin/users">확인하기 →</Link>
@@ -230,7 +232,7 @@ export default async function AdminDashboard() {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Today's Top Links */}
-          <Card className="transition-shadow hover:shadow-lg">
+          <Card className="backdrop-blur-xl bg-background/60 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -296,7 +298,7 @@ export default async function AdminDashboard() {
           </Card>
 
           {/* This Week's Top Links */}
-          <Card className="transition-shadow hover:shadow-lg">
+          <Card className="backdrop-blur-xl bg-background/60 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-2xl hover:shadow-accent/20">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -363,7 +365,7 @@ export default async function AdminDashboard() {
         </div>
 
         {/* Recent Links */}
-        <Card className="transition-shadow hover:shadow-lg">
+        <Card className="backdrop-blur-xl bg-background/60 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

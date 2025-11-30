@@ -19,26 +19,12 @@ import {
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-export default function Navigation() {
+// NavigationContent 컴포넌트를 별도로 분리
+function NavigationContent() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
-
-  // 관리자 페이지에서는 네비게이션 바를 숨김 (특정 페이지는 제외)
-  const showNavOnAdminPages = [
-    "/admin/login",
-    "/admin/register",
-    "/admin/pending",
-    "/admin/rejected",
-  ];
-
-  const isAdminPage =
-    pathname?.startsWith("/admin") && !showNavOnAdminPages.includes(pathname);
-
-  if (isAdminPage) {
-    return null;
-  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -57,23 +43,23 @@ export default function Navigation() {
   return (
     <nav
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300",
+        "sticky top-0 z-50 w-full transition-all duration-500",
         isScrolled
-          ? "bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm"
-          : "bg-transparent",
+          ? "bg-background/70 backdrop-blur-2xl border-b border-primary/10 shadow-lg shadow-primary/5"
+          : "bg-transparent backdrop-blur-sm",
       )}
     >
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 text-xl font-bold hover:opacity-80 transition-opacity"
+            className="group flex items-center gap-3 text-xl font-black hover:scale-105 transition-all duration-300"
           >
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Link2 className="h-4 w-4 text-white" />
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30 group-hover:shadow-primary/50 group-hover:rotate-12 transition-all duration-300">
+              <Link2 className="h-5 w-5 text-white" />
             </div>
-            <span className="gradient-text">DemoLink</span>
+            <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient-x bg-300% text-2xl">DemoLink</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -87,14 +73,17 @@ export default function Navigation() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+                    "relative flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-300",
                     isActive
-                      ? "bg-primary/10 text-primary"
-                      : "hover:bg-accent/50 hover:text-accent-foreground",
+                      ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary shadow-lg shadow-primary/20"
+                      : "hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 hover:text-primary",
                   )}
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-8 bg-gradient-to-r from-primary to-accent rounded-full" />
+                  )}
                 </Link>
               );
             })}
@@ -105,7 +94,7 @@ export default function Navigation() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="rounded-lg hover:bg-accent/50"
+                className="rounded-xl hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 transition-all duration-300 hover:scale-110"
               >
                 <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                 <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -113,9 +102,13 @@ export default function Navigation() {
               </Button>
 
               {/* CTA Button */}
-              <Button size="sm" className="hidden lg:flex hover-lift" asChild>
+              <Button 
+                size="sm" 
+                className="hidden lg:flex h-10 px-6 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-105" 
+                asChild
+              >
                 <Link href="/admin/register">
-                  <Sparkles className="mr-2 h-4 w-4" />
+                  <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
                   시작하기
                 </Link>
               </Button>
@@ -165,10 +158,10 @@ export default function Navigation() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-base font-medium transition-all",
+                    "flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all duration-300",
                     isActive
-                      ? "bg-primary/10 text-primary"
-                      : "hover:bg-accent/50 hover:text-accent-foreground",
+                      ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary shadow-lg shadow-primary/20"
+                      : "hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 hover:text-primary",
                   )}
                   onClick={() => setIsOpen(false)}
                 >
@@ -178,10 +171,13 @@ export default function Navigation() {
               );
             })}
 
-            <div className="pt-3 mt-3 border-t border-border/50">
-              <Button className="w-full hover-lift" asChild>
+            <div className="pt-4 mt-4 border-t border-primary/10">
+              <Button 
+                className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300" 
+                asChild
+              >
                 <Link href="/admin/register" onClick={() => setIsOpen(false)}>
-                  <Sparkles className="mr-2 h-4 w-4" />
+                  <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
                   시작하기
                 </Link>
               </Button>
@@ -191,4 +187,26 @@ export default function Navigation() {
       </div>
     </nav>
   );
+}
+
+export default function Navigation() {
+  const pathname = usePathname();
+
+  // 관리자 페이지에서는 네비게이션 바를 숨김 (특정 페이지는 제외)
+  const showNavOnAdminPages = [
+    "/admin/login",
+    "/admin/register",
+    "/admin/pending",
+    "/admin/rejected",
+  ];
+
+  const isAdminPage =
+    pathname?.startsWith("/admin") && !showNavOnAdminPages.includes(pathname);
+
+  // early return을 hooks 호출 후에 하도록 수정
+  if (isAdminPage) {
+    return null;
+  }
+
+  return <NavigationContent />;
 }

@@ -17,72 +17,86 @@ import {
   Sparkles,
   Globe,
 } from "lucide-react";
+import Threads from "@/shared/components/ui/backgrounds/threads";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative min-h-[80vh] overflow-hidden flex items-center">
-        <div className="container relative mx-auto px-4 py-24 sm:px-6 lg:px-8">
+        <div className="absolute inset-0 z-0">
+          <Threads 
+            color={[0.4, 0.2, 0.9]} 
+            amplitude={0.6} 
+            distance={0.2}
+            enableMouseInteraction={true}
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/80 z-[1]" />
+        <div className="container relative mx-auto px-4 py-32 sm:px-6 lg:px-8 z-10">
           <div className="text-center animate-in">
-            <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full border border-primary/20 bg-primary/5 text-sm font-medium text-primary">
+            <div className="inline-flex items-center gap-2 px-6 py-3 mb-10 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 backdrop-blur-sm border border-primary/20 text-sm font-semibold text-primary">
               <Sparkles className="h-4 w-4" />
-              <span>Enterprise-grade URL Management</span>
+              <span>차세대 URL 관리 플랫폼</span>
             </div>
 
-            <h1 className="text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl">
-              <span className="block gradient-text">DemoDev Link</span>
-              <span className="block mt-2 text-2xl sm:text-3xl md:text-4xl font-medium text-muted-foreground">
-                차세대 URL 관리 플랫폼
-              </span>
+            <h1 className="text-5xl font-black tracking-tight sm:text-6xl md:text-7xl lg:text-8xl mb-6">
+              <span className="block bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient-x bg-300% leading-tight">DemoDev</span>
+              <span className="block text-6xl sm:text-7xl md:text-8xl font-black mt-2 text-foreground/90">Link</span>
             </h1>
+            <div className="h-1 w-32 mx-auto bg-gradient-to-r from-transparent via-primary to-transparent mb-8" />
 
-            <p className="mx-auto mt-8 max-w-3xl text-lg sm:text-xl text-muted-foreground leading-relaxed">
-              기업 내부 전용 URL 단축 서비스로 안전하고 효율적인 링크 관리를
-              경험하세요. 실시간 분석, 팀 협업, 강력한 보안 기능을 하나의
-              플랫폼에서 제공합니다.
+            <p className="mx-auto max-w-2xl text-xl sm:text-2xl text-foreground/80 font-light leading-relaxed tracking-wide">
+              <span className="font-semibold text-primary">혁신적인</span> URL 단축 서비스로 
+              <span className="font-semibold text-accent">안전하고 효율적인</span> 링크 관리를 경험하세요
+            </p>
+            <p className="mx-auto mt-4 max-w-xl text-base sm:text-lg text-muted-foreground">
+              실시간 분석 · 팀 협업 · 엔터프라이즈 보안
             </p>
 
-            <div className="mx-auto mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="mx-auto mt-16 flex flex-col sm:flex-row gap-6 justify-center items-center">
               <Link href="/shorten">
                 <Button
                   size="lg"
-                  className="group min-w-[200px] h-14 text-lg font-medium hover-lift"
+                  className="group relative min-w-[240px] h-16 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-105"
                 >
-                  무료로 시작하기
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  <span className="absolute inset-0 rounded-md bg-white/20 blur-xl group-hover:bg-white/30 transition-all" />
+                  <span className="relative flex items-center">
+                    시작하기
+                    <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-2" />
+                  </span>
                 </Button>
               </Link>
               <Link href="/admin">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="min-w-[200px] h-14 text-lg font-medium glass-effect hover:bg-primary/5"
+                  className="min-w-[240px] h-16 text-lg font-semibold border-2 border-primary/30 bg-background/60 backdrop-blur-xl hover:bg-primary/5 hover:border-primary/50 transition-all duration-300"
                 >
-                  <Globe className="mr-2 h-5 w-5" />
-                  관리자 대시보드
+                  <Globe className="mr-3 h-5 w-5 text-primary" />
+                  대시보드 둘러보기
                 </Button>
               </Link>
             </div>
 
             {/* Stats */}
-            <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto">
-              <div className="text-center">
-                <div className="text-4xl font-bold gradient-text">99.9%</div>
-                <div className="mt-2 text-sm text-muted-foreground">
+            <div className="mt-24 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
+              <div className="group text-center p-6 rounded-2xl bg-gradient-to-br from-background/60 to-background/40 backdrop-blur-md border border-primary/10 hover:border-primary/30 transition-all duration-300">
+                <div className="text-5xl font-black bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">99.9%</div>
+                <div className="mt-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
                   가동 시간
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold gradient-text">10ms</div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  평균 응답 시간
+              <div className="group text-center p-6 rounded-2xl bg-gradient-to-br from-background/60 to-background/40 backdrop-blur-md border border-accent/10 hover:border-accent/30 transition-all duration-300">
+                <div className="text-5xl font-black bg-gradient-to-br from-accent to-primary bg-clip-text text-transparent">10ms</div>
+                <div className="mt-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  응답 시간
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold gradient-text">256bit</div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  암호화 보안
+              <div className="group text-center p-6 rounded-2xl bg-gradient-to-br from-background/60 to-background/40 backdrop-blur-md border border-primary/10 hover:border-primary/30 transition-all duration-300">
+                <div className="text-5xl font-black bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">256bit</div>
+                <div className="mt-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  암호화
                 </div>
               </div>
             </div>
