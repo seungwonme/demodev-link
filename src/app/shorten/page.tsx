@@ -1,5 +1,5 @@
 import UrlInputForm from "@/features/links/components/url/url-input-form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Link2, Sparkles, Shield, BarChart3 } from "lucide-react";
 
 export default function ShortenPage() {

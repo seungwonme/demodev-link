@@ -7,11 +7,9 @@ export type UserRole = 'user' | 'admin';
 
 // Define type aliases for the database types
 type DbProfile = Database['public']['Tables']['profiles']['Row'];
-type DbPendingUser = Database['public']['Views']['pending_users']['Row'];
 
 // Re-export the database types with the same interface names
 export type Profile = DbProfile;
-export type PendingUser = NonNullable<DbPendingUser>;
 
 // Helper type guard functions
 export const isUserStatus = (value: unknown): value is UserStatus => {

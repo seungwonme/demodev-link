@@ -190,7 +190,7 @@ export default function UserManagementTable({
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : "-"}
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "-"}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

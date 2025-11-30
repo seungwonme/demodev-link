@@ -12,9 +12,7 @@ import {
   Link2,
   Home,
   Shield,
-  BarChart3,
   Sparkles,
-  LogIn,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
