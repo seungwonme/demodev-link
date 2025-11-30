@@ -5,7 +5,7 @@
  * Handles Clerk webhook events, primarily user.created event to:
  * 1. Create a profile record in the database
  * 2. Set initial publicMetadata.status to "pending"
- * 3. Set initial privateMetadata.role to "user"
+ * 3. Set initial publicMetadata.role to "user"
  */
 
 import { Webhook } from "svix";
@@ -85,8 +85,6 @@ export async function POST(req: Request) {
       await client.users.updateUserMetadata(id, {
         publicMetadata: {
           status: "pending",
-        },
-        privateMetadata: {
           role: "user",
         },
       });

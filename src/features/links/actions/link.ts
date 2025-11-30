@@ -60,13 +60,24 @@ export async function trackLinkClick(
 
 export async function getLinkClickStats(
   linkId: string,
+  dateRange?: { startDate?: string; endDate?: string },
 ): Promise<DailyClickStats[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+
+  let query = supabase
     .from("link_clicks")
     .select("clicked_at")
-    .eq("link_id", linkId)
-    .order("clicked_at", { ascending: true });
+    .eq("link_id", linkId);
+
+  // 날짜 범위 필터 적용
+  if (dateRange?.startDate) {
+    query = query.gte("clicked_at", dateRange.startDate);
+  }
+  if (dateRange?.endDate) {
+    query = query.lte("clicked_at", dateRange.endDate);
+  }
+
+  const { data, error } = await query.order("clicked_at", { ascending: true });
 
   if (error) throw error;
 

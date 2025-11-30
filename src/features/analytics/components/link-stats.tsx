@@ -15,16 +15,18 @@ import {
 
 interface LinkStatsProps {
   linkId: string;
+  dateRange?: { startDate?: string; endDate?: string };
 }
 
-export default function LinkStats({ linkId }: LinkStatsProps) {
+export default function LinkStats({ linkId, dateRange }: LinkStatsProps) {
   const [stats, setStats] = useState<DailyClickStats[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
+      setLoading(true);
       try {
-        const data = await getLinkClickStats(linkId);
+        const data = await getLinkClickStats(linkId, dateRange);
         setStats(data);
       } catch (error) {
         console.error("통계를 불러오는데 실패했습니다:", error);
@@ -34,7 +36,8 @@ export default function LinkStats({ linkId }: LinkStatsProps) {
     };
 
     fetchStats();
-  }, [linkId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkId, dateRange?.startDate, dateRange?.endDate]);
 
   if (loading) {
     return <div className="text-center py-4">로딩 중...</div>;

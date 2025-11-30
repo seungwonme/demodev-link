@@ -19,33 +19,101 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/shared/components/ui/alert-dialog";
-import { Trash2, Copy, ExternalLink, BarChart3, Edit2 } from "lucide-react";
+import { Trash2, Copy, ExternalLink, BarChart3, Edit2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 interface LinkListProps {
   initialLinks: Link[];
 }
 
+type DateRangePreset = '7d' | '30d' | '3m' | '6m' | 'all' | 'custom';
+
 export default function LinkList({ initialLinks }: LinkListProps) {
-  const [links, setLinks] = useState<Link[]>(initialLinks);
+  const [links, setLinks] = useState<(Link & { period_clicks?: number })[]>(initialLinks);
   const [showAll, setShowAll] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [baseUrl, setBaseUrl] = useState<string>("");
   const [editingLink, setEditingLink] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState<string>("");
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
 
   useEffect(() => {
     setBaseUrl(window.location.origin);
   }, []);
 
+  useEffect(() => {
+    // 날짜 범위가 변경되면 데이터 다시 로드
+    fetchLinks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRangePreset, customStartDate, customEndDate]);
+
+  const getDateRange = (): { startDate?: string; endDate?: string } | undefined => {
+    const now = new Date();
+    const endDate = now.toISOString();
+
+    switch (dateRangePreset) {
+      case '7d': {
+        const startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 7);
+        return { startDate: startDate.toISOString(), endDate };
+      }
+      case '30d': {
+        const startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 30);
+        return { startDate: startDate.toISOString(), endDate };
+      }
+      case '3m': {
+        const startDate = new Date(now);
+        startDate.setMonth(startDate.getMonth() - 3);
+        return { startDate: startDate.toISOString(), endDate };
+      }
+      case '6m': {
+        const startDate = new Date(now);
+        startDate.setMonth(startDate.getMonth() - 6);
+        return { startDate: startDate.toISOString(), endDate };
+      }
+      case 'custom': {
+        if (customStartDate && customEndDate) {
+          return {
+            startDate: new Date(customStartDate).toISOString(),
+            endDate: new Date(customEndDate).toISOString(),
+          };
+        }
+        return undefined;
+      }
+      case 'all':
+      default:
+        return undefined;
+    }
+  };
+
+  const fetchLinks = async () => {
+    const dateRange = getDateRange();
+    const result = await getAllLinksForAnalytics(dateRange);
+    if (result.success && result.data) {
+      if (showAll) {
+        setLinks(result.data);
+      } else {
+        setLinks(result.data.slice(0, 10));
+      }
+    }
+  };
+
   const handleShowAll = async () => {
     if (!showAll) {
-      const result = await getAllLinksForAnalytics();
+      const dateRange = getDateRange();
+      const result = await getAllLinksForAnalytics(dateRange);
       if (result.success && result.data) {
-        setLinks(result.data as Link[]);
+        setLinks(result.data);
       }
     } else {
-      setLinks(initialLinks);
+      const dateRange = getDateRange();
+      const result = await getAllLinksForAnalytics(dateRange);
+      if (result.success && result.data) {
+        setLinks(result.data.slice(0, 10));
+      }
     }
     setShowAll(!showAll);
   };
@@ -107,6 +175,97 @@ export default function LinkList({ initialLinks }: LinkListProps) {
           {showAll ? "상위 10개만 보기" : "전체 보기"}
         </Button>
       </div>
+
+      {/* Date Range Selector */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Calendar className="h-4 w-4" />
+              날짜 범위 선택
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={dateRangePreset === '7d' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('7d')}
+              >
+                최근 7일
+              </Button>
+              <Button
+                variant={dateRangePreset === '30d' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('30d')}
+              >
+                최근 30일
+              </Button>
+              <Button
+                variant={dateRangePreset === '3m' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('3m')}
+              >
+                최근 3개월
+              </Button>
+              <Button
+                variant={dateRangePreset === '6m' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('6m')}
+              >
+                최근 6개월
+              </Button>
+              <Button
+                variant={dateRangePreset === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('all')}
+              >
+                전체 기간
+              </Button>
+              <Button
+                variant={dateRangePreset === 'custom' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('custom')}
+              >
+                사용자 정의
+              </Button>
+            </div>
+
+            {/* Custom Date Range Inputs */}
+            {dateRangePreset === 'custom' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">시작일</label>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">종료일</label>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Display Selected Range */}
+            <div className="text-xs text-muted-foreground">
+              {dateRangePreset === 'all' && '전체 데이터를 표시합니다'}
+              {dateRangePreset === '7d' && '최근 7일 데이터를 표시합니다'}
+              {dateRangePreset === '30d' && '최근 30일 데이터를 표시합니다'}
+              {dateRangePreset === '3m' && '최근 3개월 데이터를 표시합니다'}
+              {dateRangePreset === '6m' && '최근 6개월 데이터를 표시합니다'}
+              {dateRangePreset === 'custom' && customStartDate && customEndDate &&
+                `${customStartDate} ~ ${customEndDate} 데이터를 표시합니다`}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4">
         {links.map((link) => (
@@ -188,8 +347,19 @@ export default function LinkList({ initialLinks }: LinkListProps) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">{link.click_count} 클릭</p>
-                  <p className="text-sm text-gray-500">
+                  {dateRangePreset === 'all' ? (
+                    <p className="font-medium">{link.click_count} 클릭</p>
+                  ) : (
+                    <>
+                      <p className="font-medium text-primary">
+                        {link.period_clicks || 0} 클릭
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        (전체: {link.click_count})
+                      </p>
+                    </>
+                  )}
+                  <p className="text-sm text-gray-500 mt-1">
                     {formatDate(link.created_at || "")}
                   </p>
                   <div className="flex gap-2 mt-2 justify-end">
@@ -228,7 +398,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
               </div>
               {selectedLink?.id === link.id && (
                 <div className="mt-4 border-t pt-4">
-                  <LinkStats linkId={link.id} />
+                  <LinkStats linkId={link.id} dateRange={getDateRange()} />
                 </div>
               )}
             </CardContent>

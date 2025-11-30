@@ -11,8 +11,7 @@
  *
  * 핵심 구현 로직:
  * - Clerk middleware를 사용한 인증 체크
- * - publicMetadata의 status 확인
- * - privateMetadata의 role 확인
+ * - publicMetadata의 status, role 확인
  *
  * @dependencies
  * - @clerk/nextjs: Clerk Next.js SDK
@@ -58,25 +57,21 @@ export default clerkMiddleware(async (auth, request) => {
   // 3. Get user metadata
   // Prefer sessionClaims for speed; fall back to Clerk user fetch if metadata missing
   let publicMetadata =
-    (sessionClaims?.publicMetadata as { status?: string }) || {};
-  let privateMetadata =
-    (sessionClaims?.privateMetadata as { role?: string }) || {};
+    (sessionClaims?.publicMetadata as { status?: string; role?: string }) || {};
 
-  if (!publicMetadata.status || !privateMetadata.role) {
+  if (!publicMetadata.status || !publicMetadata.role) {
     try {
       const client = await clerkClient();
       const user = await client.users.getUser(userId);
       publicMetadata =
-        (user.publicMetadata as { status?: string }) || publicMetadata;
-      privateMetadata =
-        (user.privateMetadata as { role?: string }) || privateMetadata;
+        (user.publicMetadata as { status?: string; role?: string }) || publicMetadata;
     } catch (error) {
       console.error('[middleware] Failed to fetch user metadata', error);
     }
   }
 
   const userStatus = publicMetadata.status || 'pending';
-  const userRole = privateMetadata.role || 'user';
+  const userRole = publicMetadata.role || 'user';
 
   // 4. Handle admin routes
   if (!pathname.startsWith('/admin')) {

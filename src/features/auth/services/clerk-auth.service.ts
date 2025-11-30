@@ -6,7 +6,7 @@
  * Supabase Auth를 대체합니다.
  */
 
-import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,9 +16,9 @@ export type UserRole = "user" | "admin";
 export interface ClerkUserMetadata {
   publicMetadata: {
     status?: UserStatus;
+    role?: UserRole;
   };
   privateMetadata: {
-    role?: UserRole;
     approved_at?: string;
     approved_by?: string;
     rejected_at?: string;
@@ -45,17 +45,18 @@ export class ClerkAuthService {
       return null;
     }
 
-    const user = await currentUser();
+    // Use clerkClient to get fresh metadata (not cached session)
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
 
     if (!user) {
       return null;
     }
 
     const publicMetadata = (user.publicMetadata as ClerkUserMetadata["publicMetadata"]) || {};
-    const privateMetadata = (user.privateMetadata as ClerkUserMetadata["privateMetadata"]) || {};
 
     const status = publicMetadata.status || "pending";
-    const role = privateMetadata.role || "user";
+    const role = publicMetadata.role || "user";
     const email = user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress || null;
 
     return {
@@ -148,7 +149,7 @@ export class ClerkAuthService {
         id: user.id,
         email,
         status: publicMetadata.status || "pending",
-        role: privateMetadata.role || "user",
+        role: publicMetadata.role || "user",
         createdAt: user.createdAt,
         ...privateMetadata,
       };
@@ -215,11 +216,11 @@ export class ClerkAuthService {
     const client = await clerkClient();
     const user = await client.users.getUser(targetUserId);
 
-    const privateMetadata = (user.privateMetadata as ClerkUserMetadata["privateMetadata"]) || {};
+    const publicMetadata = (user.publicMetadata as ClerkUserMetadata["publicMetadata"]) || {};
 
     await client.users.updateUserMetadata(targetUserId, {
-      privateMetadata: {
-        ...privateMetadata,
+      publicMetadata: {
+        ...publicMetadata,
         role,
       },
     });

@@ -88,7 +88,7 @@ src/
    - Users sign up via Clerk SignUp component
    - Webhook creates profile in database with status "pending"
    - Clerk publicMetadata.status set to "pending"
-   - Clerk privateMetadata.role set to "user"
+   - Clerk publicMetadata.role set to "user"
 
 2. **Admin Approval**:
 
@@ -99,8 +99,8 @@ src/
 3. **Role-Based Access**:
 
    - User status: `publicMetadata.status` (pending/approved/rejected)
-   - User role: `privateMetadata.role` (user/admin)
-   - Middleware checks metadata for route protection
+   - User role: `publicMetadata.role` (user/admin)
+   - Middleware checks publicMetadata for route protection
 
 4. **Middleware Protection**:
    - Clerk middleware handles auth checks
@@ -192,20 +192,20 @@ const { user, isLoaded, isSignedIn } = useUser();
 
 // Access metadata
 const status = user?.publicMetadata?.status;
-const role = user?.privateMetadata?.role;
+const role = user?.publicMetadata?.role;
 ```
 
 **Metadata Structure**:
 
 ```typescript
-// Public Metadata (visible to user)
+// Public Metadata (visible to user, read-only on client)
 {
-  status: "pending" | "approved" | "rejected"
+  status: "pending" | "approved" | "rejected",
+  role: "user" | "admin"
 }
 
-// Private Metadata (admin only)
+// Private Metadata (server-only, audit trail)
 {
-  role: "user" | "admin",
   approved_at?: string,
   approved_by?: string,
   rejected_at?: string,
@@ -251,7 +251,7 @@ Uses Snowflake algorithm (`Snowflake.generate()`) for unique link IDs:
 
 - Uses `clerkMiddleware` from `@clerk/nextjs/server`
 - Checks `sessionClaims.publicMetadata.status` for user status
-- Checks `sessionClaims.privateMetadata.role` for admin access
+- Checks `sessionClaims.publicMetadata.role` for admin access
 - Redirects users based on status (pending → /admin/pending, etc.)
 
 ### 6. Clerk Webhook (`src/app/api/webhooks/clerk/route.ts`)
@@ -304,7 +304,7 @@ pnpm run migrate:users-to-clerk
 2. **Metadata not updating**: Ensure using Clerk API with proper permissions
 3. **User can't log in**: Check if status is "approved" in Clerk Dashboard
 4. **Too many redirects on /admin/login**: Middleware now allows public routes regardless of path prefix; ensure code has the updated check and watch middleware logs for metadata.
-5. **Clerk metadata missing in sessionClaims**: Middleware falls back to Clerk user fetch to read public/private metadata when claims omit them.
+5. **Clerk metadata missing in sessionClaims**: Middleware falls back to Clerk user fetch to read publicMetadata when claims omit them.
 6. **Links feature auth**: Link creation/updates now rely on Clerk auth (approved users) instead of Supabase auth; client form uses Clerk `useUser` for login state.
 7. **Status pages**: `/admin/pending` and `/admin/rejected` now redirect approved users to `/admin/dashboard`.
 

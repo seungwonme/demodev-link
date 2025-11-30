@@ -493,11 +493,13 @@ export class LinkService {
   /**
    * 마케팅 분석을 위한 상세 통계를 가져옵니다.
    * @param linkId 링크 ID
+   * @param dateRange 날짜 범위 (선택적)
    * @param supabaseClient 테스트용 Supabase 클라이언트 (선택적)
    * @returns 마케팅 분석 데이터
    */
   static async getMarketingAnalytics(
     linkId: string,
+    dateRange?: { startDate?: Date; endDate?: Date },
     supabaseClient?: SupabaseClient,
   ): Promise<{
     totalClicks: number;
@@ -511,23 +513,33 @@ export class LinkService {
   }> {
     try {
       const supabase = await this.getSupabaseClient(supabaseClient);
-      
+
       // 링크 정보 가져오기
       const { data: link, error: linkError } = await supabase
         .from(this.TABLE_NAME)
         .select("*")
         .eq("id", linkId)
         .single();
-        
+
       if (linkError || !link) {
         throw new Error("링크를 찾을 수 없습니다.");
       }
-      
-      // 모든 클릭 데이터 가져오기
-      const { data: clicks, error: clicksError } = await supabase
+
+      // 클릭 데이터 가져오기 (날짜 범위 필터 적용)
+      let query = supabase
         .from(this.CLICK_TABLE)
         .select("*")
-        .eq("link_id", linkId)
+        .eq("link_id", linkId);
+
+      if (dateRange?.startDate) {
+        query = query.gte("clicked_at", dateRange.startDate.toISOString());
+      }
+
+      if (dateRange?.endDate) {
+        query = query.lte("clicked_at", dateRange.endDate.toISOString());
+      }
+
+      const { data: clicks, error: clicksError } = await query
         .order("clicked_at", { ascending: true });
         
       if (clicksError) {
@@ -626,6 +638,82 @@ export class LinkService {
         throw error;
       }
       throw new Error('마케팅 분석 데이터 조회 중 알 수 없는 오류가 발생홈습니다.');
+    }
+  }
+
+  /**
+   * 모든 링크와 기간별 클릭 수를 가져옵니다.
+   * @param dateRange 날짜 범위 (선택적)
+   * @param supabaseClient 테스트용 Supabase 클라이언트 (선택적)
+   * @returns 링크 배열 (기간별 클릭 수 포함)
+   */
+  static async getAllLinksWithPeriodClicks(
+    dateRange?: { startDate?: Date; endDate?: Date },
+    supabaseClient?: SupabaseClient,
+  ): Promise<(Link & { period_clicks: number })[]> {
+    try {
+      const supabase = await this.getSupabaseClient(supabaseClient);
+
+      // 모든 링크 가져오기
+      const { data: links, error: linksError } = await supabase
+        .from(this.TABLE_NAME)
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (linksError) {
+        console.error("Error fetching links:", linksError);
+        throw new Error("링크 조회 중 오류가 발생했습니다.");
+      }
+
+      if (!links || links.length === 0) {
+        return [];
+      }
+
+      // 날짜 범위가 없으면 전체 클릭 수 사용
+      if (!dateRange?.startDate && !dateRange?.endDate) {
+        return links.map(link => ({
+          ...link,
+          period_clicks: link.click_count
+        }));
+      }
+
+      // 기간별 클릭 데이터 가져오기
+      let query = supabase
+        .from(this.CLICK_TABLE)
+        .select('link_id');
+
+      if (dateRange?.startDate) {
+        query = query.gte('clicked_at', dateRange.startDate.toISOString());
+      }
+
+      if (dateRange?.endDate) {
+        query = query.lte('clicked_at', dateRange.endDate.toISOString());
+      }
+
+      const { data: clickData, error: clickError } = await query;
+
+      if (clickError) {
+        console.error('Error fetching click data:', clickError);
+        throw new Error('클릭 데이터 조회 중 오류가 발생했습니다.');
+      }
+
+      // 링크별 클릭 수 계산
+      const clickCounts = (clickData || []).reduce((acc: { [key: string]: number }, click) => {
+        acc[click.link_id] = (acc[click.link_id] || 0) + 1;
+        return acc;
+      }, {});
+
+      // 링크에 기간별 클릭 수 추가
+      return links.map(link => ({
+        ...link,
+        period_clicks: clickCounts[link.id] || 0
+      }));
+    } catch (error) {
+      console.error("Error in getAllLinksWithPeriodClicks:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("링크 조회 중 알 수 없는 오류가 발생했습니다.");
     }
   }
 }

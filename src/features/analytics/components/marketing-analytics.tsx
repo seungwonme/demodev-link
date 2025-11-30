@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Progress } from "@/shared/components/ui/progress";
 import { Badge } from "@/shared/components/ui/badge";
-import { 
-  TrendingUp, 
-  TrendingDown, 
+import { Button } from "@/shared/components/ui/button";
+import {
+  TrendingUp,
+  TrendingDown,
   Minus,
   Clock,
   MousePointer,
@@ -16,7 +17,8 @@ import {
   Globe,
   Smartphone,
   Monitor,
-  Tablet
+  Tablet,
+  Calendar
 } from "lucide-react";
 import { Line, Doughnut } from "react-chartjs-2";
 import {
@@ -67,40 +69,79 @@ interface LinkData {
   description?: string | null;
   created_at: string;
   click_count: number;
+  period_clicks?: number;
   user_id: string | null;
 }
+
+type DateRangePreset = '7d' | '30d' | '3m' | '6m' | 'all' | 'custom';
 
 export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnalyticsProps) {
   const [selectedLinkId, setSelectedLinkId] = useState<string>(propLinkId || "");
   const [links, setLinks] = useState<LinkData[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
 
-  useEffect(() => {
-    // Fetch all links for the dropdown
-    const fetchLinks = async () => {
-      const result = await getAllLinksForAnalytics();
-      if (result.success && result.data) {
-        setLinks(result.data);
-        if (!propLinkId && result.data.length > 0) {
-          setSelectedLinkId(result.data[0].id);
-        }
+  const getDateRange = (): { startDate?: string; endDate?: string } | undefined => {
+    const now = new Date();
+    const endDate = now.toISOString();
+
+    switch (dateRangePreset) {
+      case '7d': {
+        const startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 7);
+        return { startDate: startDate.toISOString(), endDate };
       }
-    };
-    fetchLinks();
-  }, [propLinkId]);
-
-  useEffect(() => {
-    if (selectedLinkId) {
-      fetchAnalytics();
+      case '30d': {
+        const startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 30);
+        return { startDate: startDate.toISOString(), endDate };
+      }
+      case '3m': {
+        const startDate = new Date(now);
+        startDate.setMonth(startDate.getMonth() - 3);
+        return { startDate: startDate.toISOString(), endDate };
+      }
+      case '6m': {
+        const startDate = new Date(now);
+        startDate.setMonth(startDate.getMonth() - 6);
+        return { startDate: startDate.toISOString(), endDate };
+      }
+      case 'custom': {
+        if (customStartDate && customEndDate) {
+          return {
+            startDate: new Date(customStartDate).toISOString(),
+            endDate: new Date(customEndDate).toISOString(),
+          };
+        }
+        return undefined;
+      }
+      case 'all':
+      default:
+        return undefined;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLinkId]);
+  };
+
+  const fetchLinks = async () => {
+    const dateRange = getDateRange();
+    const result = await getAllLinksForAnalytics(
+      dateRange ? { startDate: dateRange.startDate, endDate: dateRange.endDate } : undefined
+    );
+    if (result.success && result.data) {
+      setLinks(result.data);
+      if (!propLinkId && result.data.length > 0 && !selectedLinkId) {
+        setSelectedLinkId(result.data[0].id);
+      }
+    }
+  };
 
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const result = await getMarketingAnalytics(selectedLinkId);
+      const dateRange = getDateRange();
+      const result = await getMarketingAnalytics(selectedLinkId, dateRange);
       if (result.success && result.data) {
         setAnalytics(result.data);
       } else {
@@ -112,6 +153,18 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchLinks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propLinkId, dateRangePreset, customStartDate, customEndDate]);
+
+  useEffect(() => {
+    if (selectedLinkId) {
+      fetchAnalytics();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLinkId, dateRangePreset, customStartDate, customEndDate]);
 
   if (!selectedLinkId || loading) {
     return (
@@ -219,7 +272,12 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
               {links.map((link) => (
                 <SelectItem key={link.id} value={link.id}>
                   <div className="flex flex-col">
-                    <span>{link.description || link.original_url}</span>
+                    <div className="flex items-center gap-2">
+                      <span>{link.description || link.original_url}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {link.period_clicks ?? link.click_count} 클릭
+                      </Badge>
+                    </div>
                     <span className="text-xs text-muted-foreground">
                       {link.slug} - {link.original_url}
                     </span>
@@ -230,7 +288,100 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
           </Select>
         </div>
       )}
-      
+
+      {/* Date Range Selector */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Calendar className="h-5 w-5" />
+            날짜 범위 선택
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={dateRangePreset === '7d' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('7d')}
+              >
+                최근 7일
+              </Button>
+              <Button
+                variant={dateRangePreset === '30d' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('30d')}
+              >
+                최근 30일
+              </Button>
+              <Button
+                variant={dateRangePreset === '3m' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('3m')}
+              >
+                최근 3개월
+              </Button>
+              <Button
+                variant={dateRangePreset === '6m' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('6m')}
+              >
+                최근 6개월
+              </Button>
+              <Button
+                variant={dateRangePreset === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('all')}
+              >
+                전체 기간
+              </Button>
+              <Button
+                variant={dateRangePreset === 'custom' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDateRangePreset('custom')}
+              >
+                사용자 정의
+              </Button>
+            </div>
+
+            {/* Custom Date Range Inputs */}
+            {dateRangePreset === 'custom' && (
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">시작일</label>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">종료일</label>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Display Selected Range */}
+            <div className="text-sm text-muted-foreground">
+              {dateRangePreset === 'all' && '전체 데이터를 표시합니다'}
+              {dateRangePreset === '7d' && '최근 7일 데이터를 표시합니다'}
+              {dateRangePreset === '30d' && '최근 30일 데이터를 표시합니다'}
+              {dateRangePreset === '3m' && '최근 3개월 데이터를 표시합니다'}
+              {dateRangePreset === '6m' && '최근 6개월 데이터를 표시합니다'}
+              {dateRangePreset === 'custom' && customStartDate && customEndDate &&
+                `${customStartDate} ~ ${customEndDate} 데이터를 표시합니다`}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Current Link Info */}
       {selectedLinkId && (() => {
         const currentLink = links.find(l => l.id === selectedLinkId);
