@@ -1,23 +1,31 @@
-import { AuthService } from "@/features/auth/services/auth.service";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { ClerkAuthService } from "@/features/auth/services/clerk-auth.service";
 import { Button } from "@/shared/components/ui/button";
 import Link from "next/link";
 import { XCircleIcon } from "@heroicons/react/24/outline";
+import { SignOutButton } from "@clerk/nextjs";
 
 // Force dynamic rendering since we use cookies
 export const dynamic = "force-dynamic";
 
 export default async function RejectedPage() {
-  // Check if user is rejected - this will redirect if not
-  const { profile } = await AuthService.requireAuth({ requiredStatus: "rejected" });
+  // Get current user from Clerk
+  const user = await ClerkAuthService.getCurrentUser();
+
+  // If no user or not rejected, redirect (middleware should handle this)
+  if (!user || user.status !== "rejected") {
+    return null;
+  }
+
+  // Try to get rejection reason from Clerk private metadata
+  // This would need to be fetched from Clerk if needed
+  const rejectionReason = undefined; // Clerk metadata에서 가져올 수 있음
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background relative overflow-hidden px-4">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/5 via-transparent to-transparent pointer-events-none" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-      
+
       <div className="relative max-w-md w-full text-center">
         <div className="bg-card/95 backdrop-blur-sm shadow-2xl rounded-lg p-8 border border-border/50">
           <div className="flex justify-center mb-6">
@@ -33,12 +41,12 @@ export default async function RejectedPage() {
           <div className="space-y-4 text-gray-600 dark:text-gray-400">
             <p>죄송합니다. 회원가입 신청이 거절되었습니다.</p>
 
-            {profile?.rejection_reason && (
+            {rejectionReason && (
               <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
                 <p className="text-sm text-red-700 dark:text-red-300">
                   <strong>거절 사유:</strong>
                   <br />
-                  {profile.rejection_reason}
+                  {rejectionReason}
                 </p>
               </div>
             )}
@@ -55,22 +63,14 @@ export default async function RejectedPage() {
               </Button>
             </Link>
 
-            <form
-              action={async () => {
-                "use server";
-                const supabase = await createClient();
-                await supabase.auth.signOut();
-                redirect("/admin/login");
-              }}
-            >
+            <SignOutButton redirectUrl="/">
               <Button
-                type="submit"
                 variant="ghost"
                 className="w-full text-red-600 hover:text-red-700"
               >
                 로그아웃
               </Button>
-            </form>
+            </SignOutButton>
           </div>
         </div>
       </div>

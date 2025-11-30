@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   Link2,
@@ -15,8 +15,8 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { signOut } from "@/features/auth/actions/auth";
-import { UserRole } from "@/features/auth/types/profile";
+import { useClerk } from "@clerk/nextjs";
+import { UserRole } from "@/features/auth/services/clerk-auth.service";
 import { cn } from "@/lib/utils";
 import { Button } from "@/shared/components/ui/button";
 import { useTheme } from "next-themes";
@@ -28,6 +28,8 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ userRole }: AdminSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { signOut } = useClerk();
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -37,6 +39,7 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
 
   const handleLogout = async () => {
     await signOut();
+    router.push("/");
   };
 
   const menuItems = [

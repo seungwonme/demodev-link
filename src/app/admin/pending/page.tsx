@@ -1,19 +1,27 @@
-import { AuthService } from '@/features/auth/services/auth.service';
+import { ClerkAuthService } from '@/features/auth/services/clerk-auth.service';
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card';
 import { AlertCircle } from 'lucide-react';
+import { SignOutButton } from '@clerk/nextjs';
+import { Button } from '@/shared/components/ui/button';
 
 // Force dynamic rendering since we use cookies
 export const dynamic = 'force-dynamic';
 
 export default async function PendingApprovalPage() {
-  // Check if user is pending - this will redirect if not
-  await AuthService.requireAuth({ requiredStatus: 'pending' });
+  // Middleware already verified auth and status, just get user info
+  const user = await ClerkAuthService.getCurrentUser();
+
+  // Defensive check (middleware should prevent this)
+  if (!user || user.status !== 'pending') {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background relative overflow-hidden px-4">
@@ -49,6 +57,13 @@ export default async function PendingApprovalPage() {
             </p>
           </div>
         </CardContent>
+        <CardFooter className="flex justify-center border-t pt-6">
+          <SignOutButton>
+            <Button variant="outline" className="w-full sm:w-auto">
+              로그아웃
+            </Button>
+          </SignOutButton>
+        </CardFooter>
       </Card>
     </div>
   );

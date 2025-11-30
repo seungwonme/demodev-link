@@ -1,16 +1,13 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { ClerkAuthService } from "@/features/auth/services/clerk-auth.service";
 
 export async function updateLinkDescription(linkId: string, description: string) {
   const supabase = await createClient();
   
-  // 현재 사용자 확인
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    return { error: "로그인이 필요합니다." };
-  }
+  // Clerk 인증
+  const currentUser = await ClerkAuthService.requireAuth({ requiredStatus: "approved" });
   
   // 링크 소유자 확인
   const { data: link, error: linkError } = await supabase
@@ -23,15 +20,8 @@ export async function updateLinkDescription(linkId: string, description: string)
     return { error: "링크를 찾을 수 없습니다." };
   }
   
-  // 사용자 프로필 확인 (관리자 여부)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  
   // 소유자가 아니고 관리자도 아닌 경우 거부
-  if (link.user_id !== user.id && profile?.role !== "admin") {
+  if (link.user_id !== currentUser.userId && currentUser.role !== "admin") {
     return { error: "이 링크를 수정할 권한이 없습니다." };
   }
   

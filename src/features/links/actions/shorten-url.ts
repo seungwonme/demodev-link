@@ -2,23 +2,13 @@
 
 import { LinkService } from "@/features/links/actions/link.service";
 import { CreateLinkDTO, LinkResponse } from "@/shared/types/link";
-import { createClient } from "@/lib/supabase/server";
+import { ClerkAuthService } from "@/features/auth/services/clerk-auth.service";
 
 export async function shortenUrl(data: CreateLinkDTO): Promise<LinkResponse> {
   try {
-    const supabase = await createClient();
-    
-    // 현재 사용자 확인
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await ClerkAuthService.requireAuth({ requiredStatus: "approved" });
 
-    // 로그인되지 않은 경우 오류 반환
-    if (!user) {
-      throw new Error("URL 단축 기능은 로그인 후 이용 가능합니다.");
-    }
-
-    const link = await LinkService.createShortLink(data);
+    const link = await LinkService.createShortLink(data, undefined, user.userId);
     const shortUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/${link.slug}`;
 
     return {

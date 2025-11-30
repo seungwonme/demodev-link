@@ -1,4 +1,4 @@
-import { AuthService } from "@/features/auth/services/auth.service";
+import { ClerkAuthService } from "@/features/auth/services/clerk-auth.service";
 import { LinkService } from "@/features/links/actions/link.service";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -26,7 +26,14 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
   try {
-    const { profile } = await AuthService.requireAuth();
+    // Middleware already verified auth and approval status
+    const user = await ClerkAuthService.getCurrentUser();
+
+    // Defensive check (middleware should prevent this)
+    if (!user || user.status !== 'approved') {
+      throw new Error('Unauthorized access');
+    }
+
     const supabase = await createClient();
 
     // Initialize default values for graceful degradation
@@ -86,21 +93,13 @@ export default async function AdminDashboard() {
         console.error("Failed to fetch week's top links:", results[4].reason);
       }
 
-      // Admin only stats with error handling
-      if (profile?.role === "admin") {
+      // Admin only stats with error handling - fetch from Clerk
+      if (user.role === "admin") {
         try {
-          const { count, error } = await supabase
-            .from("profiles")
-            .select("*", { count: "exact", head: true })
-            .eq("status", "pending");
-
-          if (error) {
-            console.error("Failed to fetch pending users:", error);
-          } else {
-            pendingUsers = count || 0;
-          }
+          const users = await ClerkAuthService.getUsersByStatus("pending");
+          pendingUsers = users.length;
         } catch (err) {
-          console.error("Error fetching pending users:", err);
+          console.error("Error fetching pending users from Clerk:", err);
         }
       }
 
@@ -142,7 +141,7 @@ export default async function AdminDashboard() {
         <div className="mb-10 animate-in">
           <h1 className="text-4xl sm:text-5xl font-black mb-3">
             <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient-x bg-300%">
-              안녕하세요, {profile?.role === "admin" ? "관리자" : "사용자"}님!
+              안녕하세요, {user.role === "admin" ? "관리자" : "사용자"}님!
             </span>
           </h1>
           <p className="text-lg text-muted-foreground font-light">
@@ -200,7 +199,7 @@ export default async function AdminDashboard() {
             </CardContent>
           </Card>
 
-          {profile?.role === "admin" && (
+          {user.role === "admin" && (
             <Card className="group backdrop-blur-xl bg-background/60 border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/20 hover:scale-[1.02] overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">

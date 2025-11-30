@@ -54,5 +54,6 @@ next-env.d.ts
 *.patch
 *.log
 
-# other
+# mcp
 .cursor/mcp.json
+.mcp.json

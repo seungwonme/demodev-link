@@ -1,9 +1,8 @@
 "use client";
 
 import { shortenUrl } from "@/features/links/actions/shorten-url";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ShortenedUrlResult } from "@/features/links/components/url/shortened-url-result";
-import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -13,6 +12,7 @@ import { AlertCircle, Info, Loader2, X, Link2, Sparkles, Settings2, Globe, Hash 
 import { Switch } from "@/shared/components/ui/switch";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Card, CardContent } from "@/shared/components/ui/card";
+import { useUser } from "@clerk/nextjs";
 
 export default function UrlInputForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,30 +22,7 @@ export default function UrlInputForm() {
   const [description, setDescription] = useState("");
   const [customSlug, setCustomSlug] = useState("");
   const [showCustomSlug, setShowCustomSlug] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setIsLoggedIn(!!user);
-
-      // 인증 상태 변경 감지
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
-        setIsLoggedIn(!!session);
-      });
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    };
-
-    checkAuthStatus();
-  }, [supabase]);
+  const { isLoaded, isSignedIn } = useUser();
 
   function handleSuccess(url: string) {
     setShortUrl(url);
@@ -69,7 +46,7 @@ export default function UrlInputForm() {
 
   async function handleSubmit() {
     // 로그인 상태 체크
-    if (!isLoggedIn) {
+    if (!isSignedIn) {
       handleError("URL 단축 기능은 로그인 후 이용 가능합니다.");
       return;
     }
@@ -115,7 +92,7 @@ export default function UrlInputForm() {
   }
 
   // 아직 로그인 상태 확인 중이라면 로딩 표시
-  if (isLoggedIn === null) {
+  if (!isLoaded) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -124,7 +101,7 @@ export default function UrlInputForm() {
   }
 
   // 로그인하지 않은 경우 안내 메시지 표시
-  if (isLoggedIn === false) {
+  if (!isSignedIn) {
     return (
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-6">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Profile } from "@/features/auth/types/profile";
 import { Button } from "@/shared/components/ui/button";
 import {
   Table,
@@ -40,10 +39,24 @@ import {
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Check, X, User, ShieldCheck } from "lucide-react";
-import { updateUserStatus, updateUserRole } from "@/features/auth/actions/user";
+import { updateUserStatus, updateUserRole } from "@/features/auth/actions/clerk-user";
+import { UserStatus, UserRole } from "@/features/auth/services/clerk-auth.service";
+
+interface ClerkUser {
+  id: string;
+  email: string | null;
+  status: UserStatus;
+  role: UserRole;
+  createdAt: number;
+  approved_at?: string;
+  approved_by?: string;
+  rejected_at?: string;
+  rejected_by?: string;
+  rejection_reason?: string;
+}
 
 interface UserManagementTableProps {
-  users: Profile[];
+  users: ClerkUser[];
   currentUserId: string;
 }
 

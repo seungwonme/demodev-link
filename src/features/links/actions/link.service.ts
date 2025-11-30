@@ -4,6 +4,7 @@ import { CreateLinkDTO, Link } from "@/shared/types/link";
 import { DailyClickStats } from "@/shared/types/types";
 import { Snowflake } from "@/shared/utils/snowflake";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ClerkAuthService } from "@/features/auth/services/clerk-auth.service";
 
 export class LinkService {
   private static TABLE_NAME = "links";
@@ -38,26 +39,16 @@ export class LinkService {
   static async createShortLink(
     data: CreateLinkDTO,
     supabaseClient?: SupabaseClient,
+    clerkUserId?: string,
   ): Promise<Link> {
     try {
       const supabase = await this.getSupabaseClient(supabaseClient);
 
-      // 현재 사용자 확인 (테스트 환경에서는 스킵)
-      let userId = null;
-      if (
-        !supabaseClient &&
-        process.env.NODE_ENV !== "test" &&
-        !process.env.VITEST
-      ) {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        // 로그인되지 않은 경우 오류 반환
-        if (!user) {
-          throw new Error("URL 단축 기능은 로그인 후 이용 가능합니다.");
-        }
-        userId = user.id;
+      // Clerk 인증 (테스트 환경은 스킵)
+      let userId = clerkUserId || null;
+      if (!supabaseClient && process.env.NODE_ENV !== "test" && !process.env.VITEST) {
+        const user = await ClerkAuthService.requireAuth({ requiredStatus: "approved" });
+        userId = user.userId;
       }
 
       let slug: string;
@@ -379,14 +370,9 @@ export class LinkService {
   ): Promise<void> {
     try {
       const supabase = await this.getSupabaseClient(supabaseClient);
-      
-      // 현재 사용자 확인
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error("로그인이 필요합니다.");
-      }
-      
+
+      const currentUser = await ClerkAuthService.requireAuth({ requiredStatus: "approved" });
+
       // 링크 소유자 확인
       const { data: link, error: linkError } = await supabase
         .from(this.TABLE_NAME)
@@ -398,15 +384,8 @@ export class LinkService {
         throw new Error("링크를 찾을 수 없습니다.");
       }
       
-      // 사용자 프로필 확인 (관리자 여부)
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      
       // 소유자가 아니고 관리자도 아닌 경우 거부
-      if (link.user_id !== user.id && profile?.role !== "admin") {
+      if (link.user_id !== currentUser.userId && currentUser.role !== "admin") {
         throw new Error("이 링크를 삭제할 권한이 없습니다.");
       }
       
