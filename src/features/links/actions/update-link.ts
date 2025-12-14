@@ -31,17 +31,17 @@ export async function updateLinkDescription(linkId: string, description: string)
   if (link.user_id !== profile?.id && currentUser.role !== "admin") {
     return { error: "이 링크를 수정할 권한이 없습니다." };
   }
-  
+
   // 설명 업데이트
   const { error: updateError } = await supabase
     .from("links")
     .update({ description: description.trim() || null })
     .eq("id", linkId);
-    
+
   if (updateError) {
     console.error("Error updating link description:", updateError);
     return { error: "설명 업데이트 중 오류가 발생했습니다." };
   }
-  
+
   return { success: true };
 }

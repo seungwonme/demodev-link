@@ -12,7 +12,7 @@ import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
 
     try {
       // Create profile in database
-      const supabase = await createClient();
+      const supabase = createAdminClient();
       const { error: profileError } = await supabase
         .from("profiles")
         .insert({
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
 
     try {
       // Delete profile from database
-      const supabase = await createClient();
+      const supabase = createAdminClient();
       const { error } = await supabase
         .from("profiles")
         .delete()
