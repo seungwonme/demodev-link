@@ -26,8 +26,15 @@ Clerk Third-Party Integration 방식으로 Supabase와 연동하는 방법.
 
 ```bash
 # .env.local
+
+# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_xxxxx
+CLERK_SECRET_KEY=sk_xxxxx
+
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # Webhook용
 ```
 
 ### Step 4: Supabase 클라이언트 설정
@@ -130,6 +137,167 @@ USING ((SELECT auth.jwt()->>'sub') = user_id);
 
 ---
 
+## Clerk Webhook 설정
+
+사용자 생성/삭제 시 Supabase profiles 테이블과 동기화.
+
+### Step 1: Webhook 엔드포인트 생성
+
+```typescript
+// src/app/api/webhooks/clerk/route.ts
+import { Webhook } from "svix";
+import { headers } from "next/headers";
+import { WebhookEvent } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
+import { createClient } from "@supabase/supabase-js";
+
+// Service Role Key 사용 (RLS 우회)
+function createAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
+
+export async function POST(req: Request) {
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+
+  if (!WEBHOOK_SECRET) {
+    throw new Error("Missing CLERK_WEBHOOK_SECRET");
+  }
+
+  // Svix 헤더 검증
+  const headerPayload = await headers();
+  const svix_id = headerPayload.get("svix-id");
+  const svix_timestamp = headerPayload.get("svix-timestamp");
+  const svix_signature = headerPayload.get("svix-signature");
+
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    return new Response("Missing svix headers", { status: 400 });
+  }
+
+  const payload = await req.json();
+  const body = JSON.stringify(payload);
+
+  // Webhook 검증
+  const wh = new Webhook(WEBHOOK_SECRET);
+  let evt: WebhookEvent;
+
+  try {
+    evt = wh.verify(body, {
+      "svix-id": svix_id,
+      "svix-timestamp": svix_timestamp,
+      "svix-signature": svix_signature,
+    }) as WebhookEvent;
+  } catch (err) {
+    console.error("Webhook verification failed:", err);
+    return new Response("Webhook verification failed", { status: 400 });
+  }
+
+  const eventType = evt.type;
+
+  // 사용자 생성 시 프로필 생성
+  if (eventType === "user.created") {
+    const { id, email_addresses, primary_email_address_id } = evt.data;
+
+    const primaryEmail = email_addresses.find(
+      (email) => email.id === primary_email_address_id
+    )?.email_address;
+
+    try {
+      const supabase = createAdminClient();
+
+      // profiles 테이블에 레코드 생성
+      const { error } = await supabase.from("profiles").insert({
+        clerk_user_id: id,
+        email: primaryEmail,
+      });
+
+      if (error) {
+        console.error("Failed to create profile:", error);
+        return new Response("Failed to create profile", { status: 500 });
+      }
+
+      // Clerk metadata 초기화
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(id, {
+        publicMetadata: {
+          status: "pending",
+          role: "user",
+        },
+      });
+
+      console.log("Profile created:", id);
+    } catch (error) {
+      console.error("Error in user.created:", error);
+      return new Response("Internal server error", { status: 500 });
+    }
+  }
+
+  // 사용자 삭제 시 프로필 삭제
+  if (eventType === "user.deleted") {
+    const { id } = evt.data;
+
+    try {
+      const supabase = createAdminClient();
+      await supabase
+        .from("profiles")
+        .delete()
+        .eq("clerk_user_id", id);
+
+      console.log("Profile deleted:", id);
+    } catch (error) {
+      console.error("Error in user.deleted:", error);
+    }
+  }
+
+  return new Response("OK", { status: 200 });
+}
+```
+
+### Step 2: 환경 변수 추가
+
+```bash
+# .env.local에 추가
+CLERK_WEBHOOK_SECRET=whsec_xxxxx  # Webhook 등록 후 복사
+```
+
+### Step 3: Clerk에서 Production 도메인 등록
+
+1. [Clerk Dashboard](https://dashboard.clerk.com) → **Configure** → **Domains**
+2. **Add Domain** 클릭
+3. **Domain**: `your-domain.com` 입력
+4. DNS 레코드 추가:
+   - **Type**: `CNAME`
+   - **Name**: `clerk` (또는 원하는 서브도메인)
+   - **Value**: Clerk에서 제공하는 값 (예: `frontend-api.clerk.services`)
+5. DNS 전파 완료 후 **Verify** 클릭
+
+### Step 4: Clerk Dashboard에서 Webhook 등록
+
+1. [Clerk Dashboard](https://dashboard.clerk.com) → **Configure** → **Webhooks**
+2. **Add Endpoint** 클릭
+3. **Endpoint URL**: `https://your-domain.com/api/webhooks/clerk`
+4. **Events** 선택:
+   - `user.created`
+   - `user.deleted`
+5. **Create** 클릭
+6. **Signing Secret** 복사 → `CLERK_WEBHOOK_SECRET`에 설정
+
+### Step 5: svix 패키지 설치
+
+```bash
+pnpm add svix
+```
+
+---
+
 ## RLS 정책 예시: demo-link 프로젝트
 
 ### profiles 테이블
@@ -213,6 +381,121 @@ SELECT auth.jwt()->>'sub';
 ALTER TABLE profiles
 ALTER COLUMN id SET DEFAULT gen_random_uuid()::text;
 ```
+
+---
+
+## Production / Development 환경 분리
+
+### 방법 1: Clerk 환경별 인스턴스 사용
+
+Clerk는 Production/Development 인스턴스를 자동 분리함.
+
+```bash
+# .env.local (Development)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
+CLERK_SECRET_KEY=sk_test_xxxxx
+
+# .env.production (Production)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxxxx
+CLERK_SECRET_KEY=sk_live_xxxxx
+```
+
+### 방법 2: Supabase 프로젝트 분리
+
+**권장**: Production/Development 별도 Supabase 프로젝트 생성
+
+```bash
+# .env.local (Development)
+NEXT_PUBLIC_SUPABASE_URL=https://dev-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=dev-anon-key
+SUPABASE_SERVICE_ROLE_KEY=dev-service-role-key
+
+# .env.production (Production)
+NEXT_PUBLIC_SUPABASE_URL=https://prod-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=prod-anon-key
+SUPABASE_SERVICE_ROLE_KEY=prod-service-role-key
+```
+
+### 방법 3: Supabase Branching (Pro Plan)
+
+Supabase Pro Plan에서 Git-like 브랜칭 지원.
+
+```bash
+# 브랜치 생성
+supabase branches create develop
+
+# 브랜치 목록
+supabase branches list
+
+# 브랜치 삭제
+supabase branches delete develop
+```
+
+### 스키마 동기화
+
+#### Supabase CLI로 마이그레이션 관리
+
+```bash
+# 1. Supabase CLI 설치
+pnpm add -D supabase
+
+# 2. 프로젝트 초기화
+bunx supabase init
+
+# 3. 원격 DB 연결
+bunx supabase link --project-ref your-project-ref
+
+# 4. 현재 스키마를 마이그레이션으로 추출
+bunx supabase db pull
+
+# 5. 새 마이그레이션 생성
+bunx supabase migration new add_new_table
+
+# 6. 마이그레이션 적용 (로컬)
+bunx supabase db reset
+
+# 7. 마이그레이션 적용 (원격)
+bunx supabase db push
+```
+
+#### 타입 생성
+
+```bash
+# Supabase에서 TypeScript 타입 자동 생성
+bunx supabase gen types typescript --project-id your-project-ref > src/shared/types/database.types.ts
+```
+
+### Clerk 환경 매칭
+
+| Clerk 환경 | Supabase 프로젝트 | Third-Party Auth 설정 |
+|-----------|------------------|---------------------|
+| Development (`pk_test_`) | dev-project | Clerk dev domain |
+| Production (`pk_live_`) | prod-project | Clerk prod domain |
+
+**주의**: 각 Supabase 프로젝트마다 Clerk Third-Party Auth를 별도로 설정해야 함.
+
+### Vercel 환경 변수 설정
+
+```bash
+# Development (Preview)
+vercel env add NEXT_PUBLIC_SUPABASE_URL development
+vercel env add CLERK_SECRET_KEY development
+
+# Production
+vercel env add NEXT_PUBLIC_SUPABASE_URL production
+vercel env add CLERK_SECRET_KEY production
+```
+
+또는 Vercel Dashboard → Settings → Environment Variables에서 설정:
+
+| Variable | Development | Production |
+|----------|-------------|------------|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_xxx` | `pk_live_xxx` |
+| `CLERK_SECRET_KEY` | `sk_test_xxx` | `sk_live_xxx` |
+| `NEXT_PUBLIC_SUPABASE_URL` | dev URL | prod URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | dev key | prod key |
+| `SUPABASE_SERVICE_ROLE_KEY` | dev key | prod key |
+| `CLERK_WEBHOOK_SECRET` | dev secret | prod secret |
 
 ---
 
