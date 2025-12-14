@@ -35,6 +35,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/webhooks(.*)',
+  '/api/cron(.*)',
 ]);
 
 // Routes that should be excluded from middleware entirely (short URLs)
