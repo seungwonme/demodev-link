@@ -45,26 +45,35 @@ export class ClerkAuthService {
       return null;
     }
 
-    // Use clerkClient to get fresh metadata (not cached session)
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
+    try {
+      // Use clerkClient to get fresh metadata (not cached session)
+      const client = await clerkClient();
+      const user = await client.users.getUser(userId);
 
-    if (!user) {
-      return null;
+      if (!user) {
+        return null;
+      }
+
+      const publicMetadata = (user.publicMetadata as ClerkUserMetadata["publicMetadata"]) || {};
+
+      const status = publicMetadata.status || "pending";
+      const role = publicMetadata.role || "user";
+      const email = user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress || null;
+
+      return {
+        userId,
+        email,
+        status,
+        role,
+      };
+    } catch (error: unknown) {
+      // Handle case where user was deleted from Clerk but session still exists
+      if (error && typeof error === "object" && "status" in error && error.status === 404) {
+        console.warn(`User ${userId} not found in Clerk (possibly deleted)`);
+        return null;
+      }
+      throw error;
     }
-
-    const publicMetadata = (user.publicMetadata as ClerkUserMetadata["publicMetadata"]) || {};
-
-    const status = publicMetadata.status || "pending";
-    const role = publicMetadata.role || "user";
-    const email = user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress || null;
-
-    return {
-      userId,
-      email,
-      status,
-      role,
-    };
   }
 
   /**
