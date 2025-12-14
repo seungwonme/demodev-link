@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Play, X } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -34,10 +35,12 @@ export function YouTubeEmbed({
         className={`relative aspect-video w-full overflow-hidden rounded-lg bg-black ${className}`}
       >
         {/* 썸네일 이미지 */}
-        <img
+        <Image
           src={thumbnailUrl}
           alt={title || "YouTube video thumbnail"}
-          className="h-full w-full object-cover"
+          fill
+          className="object-cover"
+          unoptimized
         />
 
         {/* 재생 버튼 오버레이 */}

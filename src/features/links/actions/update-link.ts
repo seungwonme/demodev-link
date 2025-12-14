@@ -5,23 +5,30 @@ import { ClerkAuthService } from "@/features/auth/services/clerk-auth.service";
 
 export async function updateLinkDescription(linkId: string, description: string) {
   const supabase = await createClient();
-  
+
   // Clerk 인증
   const currentUser = await ClerkAuthService.requireAuth({ requiredStatus: "approved" });
-  
+
+  // 현재 사용자의 프로필 ID 조회
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("clerk_user_id", currentUser.userId)
+    .single();
+
   // 링크 소유자 확인
   const { data: link, error: linkError } = await supabase
     .from("links")
     .select("user_id")
     .eq("id", linkId)
     .single();
-    
+
   if (linkError || !link) {
     return { error: "링크를 찾을 수 없습니다." };
   }
-  
-  // 소유자가 아니고 관리자도 아닌 경우 거부
-  if (link.user_id !== currentUser.userId && currentUser.role !== "admin") {
+
+  // 소유자가 아니고 관리자도 아닌 경우 거부 (profiles.id로 비교)
+  if (link.user_id !== profile?.id && currentUser.role !== "admin") {
     return { error: "이 링크를 수정할 권한이 없습니다." };
   }
   

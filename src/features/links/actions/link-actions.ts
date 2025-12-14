@@ -1,8 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { DailyClickStats } from "@/shared/types/types";
-import { Link } from "@/shared/types/link";
+import { Link, DailyClickStats } from "@/shared/types/link";
 
 export async function getTopLinks(limit: number = 10): Promise<Link[]> {
   const supabase = await createClient();

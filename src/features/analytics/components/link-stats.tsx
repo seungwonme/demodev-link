@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DailyClickStats } from "@/shared/types/types";
-import { getLinkClickStats } from "@/features/links/actions/link";
+import { DailyClickStats } from "@/shared/types/link";
+import { getLinkClickStats } from "@/features/links/actions/link-actions";
 import {
   LineChart,
   Line,

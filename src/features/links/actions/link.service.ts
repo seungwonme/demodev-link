@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
-import { CreateLinkDTO, Link } from "@/shared/types/link";
-import { DailyClickStats } from "@/shared/types/types";
+import { CreateLinkDTO, Link, DailyClickStats } from "@/shared/types/link";
 import { Snowflake } from "@/shared/utils/snowflake";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ClerkAuthService } from "@/features/auth/services/clerk-auth.service";
@@ -424,19 +423,26 @@ export class LinkService {
 
       const currentUser = await ClerkAuthService.requireAuth({ requiredStatus: "approved" });
 
+      // 현재 사용자의 프로필 ID 조회
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("clerk_user_id", currentUser.userId)
+        .single();
+
       // 링크 소유자 확인
       const { data: link, error: linkError } = await supabase
         .from(this.TABLE_NAME)
         .select("user_id")
         .eq("id", linkId)
         .single();
-        
+
       if (linkError || !link) {
         throw new Error("링크를 찾을 수 없습니다.");
       }
-      
-      // 소유자가 아니고 관리자도 아닌 경우 거부
-      if (link.user_id !== currentUser.userId && currentUser.role !== "admin") {
+
+      // 소유자가 아니고 관리자도 아닌 경우 거부 (profiles.id로 비교)
+      if (link.user_id !== profile?.id && currentUser.role !== "admin") {
         throw new Error("이 링크를 삭제할 권한이 없습니다.");
       }
       

@@ -307,6 +307,7 @@ pnpm run migrate:users-to-clerk
 5. **Clerk metadata missing in sessionClaims**: Middleware falls back to Clerk user fetch to read publicMetadata when claims omit them.
 6. **Links feature auth**: Link creation/updates now rely on Clerk auth (approved users) instead of Supabase auth; client form uses Clerk `useUser` for login state.
 7. **Status pages**: `/admin/pending` and `/admin/rejected` now redirect approved users to `/admin/dashboard`.
+8. **Short URL redirect to login**: Middleware now has `isShortUrlRoute()` check to allow single-segment paths (e.g., `/abc123`) without authentication.
 
 ### Database Issues
 
@@ -317,3 +318,184 @@ pnpm run migrate:users-to-clerk
 
 1. **Hot reload issues**: Restart dev server after changing environment variables
 2. **Type errors**: Run `pnpm run gen:types` after database schema changes
+
+# 현재 프로젝트: demo-link
+
+## 프로젝트 개요
+
+- **위치**: `/Users/seungwonan/Dev/1-project/demo-link`
+- **설명**: URL 단축 서비스 (Next.js 15 + Clerk + Supabase)
+- **주요 기능**: 링크 단축, 사용자 승인 시스템, 분석/통계
+
+## 기술 스택
+
+- **프레임워크**: Next.js 15 (App Router)
+- **인증**: Clerk (Supabase Auth에서 마이그레이션 완료)
+- **데이터베이스**: Supabase (PostgreSQL) - 데이터베이스 용도만
+- **스타일링**: Tailwind CSS v4
+- **UI**: shadcn/ui + lucide-react
+- **패키지 매니저**: pnpm
+
+## 핵심 아키텍처
+
+### 1. 인증 시스템 (Clerk 기반)
+
+- **사용자 상태**: `publicMetadata.status` (pending/approved/rejected)
+- **사용자 역할**: `privateMetadata.role` (user/admin)
+- **중요**: 상태/역할은 Clerk metadata에 저장, 데이터베이스에는 저장 안 함
+
+### 2. 디렉토리 구조
+
+```
+src/
+├── app/                          # Next.js App Router
+│   ├── admin/                    # 관리자 페이지 (보호됨)
+│   │   ├── login/[[...sign-in]]/ # Clerk SignIn
+│   │   ├── register/[[...sign-up]]/ # Clerk SignUp
+│   │   └── users/                # 사용자 관리 (admin만)
+│   ├── api/webhooks/clerk/       # Clerk webhook
+│   └── [slug]/                   # 동적 리다이렉션
+├── features/                     # 기능별 모듈
+│   ├── auth/
+│   │   ├── services/clerk-auth.service.ts  # 핵심 인증 로직
+│   │   └── actions/clerk-user.ts           # 사용자 관리 액션
+│   ├── links/
+│   │   └── actions/
+│   │       ├── link-actions.ts   # 서버 액션 (클라이언트 호출용)
+│   │       ├── link.service.ts   # 링크 서비스 (테스트 지원)
+│   │       ├── shorten-url.ts    # URL 단축 액션
+│   │       ├── update-link.ts    # 링크 수정 액션
+│   │       └── delete-link.ts    # 링크 삭제 액션
+│   └── analytics/                # 분석 기능
+├── shared/types/
+│   ├── database.types.ts         # Supabase 자동 생성 타입
+│   └── link.ts                   # Link 타입 + DTO
+├── lib/supabase/                 # Supabase 클라이언트 (DB only)
+└── middleware.ts                 # Clerk 미들웨어
+```
+
+### 3. 주요 서비스 사용법
+
+**인증 체크 (서버)**:
+
+```typescript
+import { ClerkAuthService } from '@/features/auth/services/clerk-auth.service';
+
+// 현재 사용자 가져오기
+const user = await ClerkAuthService.getCurrentUser();
+
+// 인증 필수 (승인된 사용자만)
+const user = await ClerkAuthService.requireAuth({ requiredStatus: 'approved' });
+
+// 관리자 전용
+const user = await ClerkAuthService.requireAuth({ requireAdmin: true });
+```
+
+**사용자 관리 (관리자)**:
+
+```typescript
+import {
+  updateUserStatus,
+  updateUserRole,
+} from '@/features/auth/actions/clerk-user';
+
+await updateUserStatus(userId, 'approved');
+await updateUserStatus(userId, 'rejected', '거절 사유');
+await updateUserRole(userId, 'admin');
+```
+
+**Supabase 클라이언트 (DB only)**:
+
+```typescript
+// 서버 컴포넌트/액션
+import { createClient } from '@/lib/supabase/server';
+const supabase = await createClient();
+
+// 클라이언트 컴포넌트
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
+```
+
+### 4. 데이터베이스 스키마
+
+**profiles** (Clerk 연동):
+
+- `clerk_user_id` (TEXT, PK): Clerk 사용자 ID
+- `email` (TEXT)
+- `created_at`, `updated_at`
+- ⚠️ status, role 없음 (Clerk metadata 사용)
+
+**links**:
+
+- `id`, `slug`, `original_url`, `user_id` (TEXT)
+- `click_count`, `created_at`
+
+**link_clicks**:
+
+- `id`, `link_id`, `clicked_at`
+- `user_agent`, `ip_address`
+
+### 5. 주요 명령어
+
+```bash
+# 개발
+pnpm dev                          # Turbopack 개발 서버
+
+# DB 관련
+pnpm run gen:types                # Supabase 타입 생성
+pnpm run db:push                  # 마이그레이션 푸시
+pnpm run db:pull                  # 스키마 풀
+
+# 마이그레이션
+pnpm run migrate:users-to-clerk   # Supabase Auth → Clerk 마이그레이션
+```
+
+### 6. 환경 변수
+
+```bash
+# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+CLERK_WEBHOOK_SECRET=
+
+# Supabase (DB only)
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+### 7. 중요 구현 패턴
+
+- **Server Components First**: 기본적으로 서버 컴포넌트, 필요시에만 'use client'
+- **Feature-Based**: 기능별로 디렉토리 구성 (auth, links, analytics)
+- **Metadata Authorization**: DB 대신 Clerk metadata로 권한 관리
+- **Snowflake ID**: Base62 인코딩으로 짧은 URL 생성
+- **Clerk Webhook**: user.created 이벤트로 profiles 자동 생성
+
+### 8. 타입 시스템
+
+**모든 DB 타입은 `database.types.ts`에서 자동 생성:**
+
+```typescript
+// 올바른 사용법 - database.types.ts에서 import
+import type { Tables } from "@/shared/types/database.types";
+type Link = Tables<"links">;
+type Profile = Tables<"profiles">;
+
+// 또는 link.ts의 re-export 사용
+import { Link, DailyClickStats } from "@/shared/types/link";
+```
+
+**파일 구조:**
+- `database.types.ts`: Supabase에서 자동 생성된 타입 (pnpm run gen:types)
+- `link.ts`: Link 관련 타입 re-export + DTO 타입 정의
+
+### 9. 마이그레이션 히스토리
+
+- ✅ Supabase Auth → Clerk 완료 (2025-12-01)
+- ✅ RLS 정책 제거 (애플리케이션 레벨 인증)
+- ✅ status/role을 Clerk metadata로 이전
+- ✅ 타입 시스템 정리 - database.types.ts 기반으로 통합 (2025-12-14)
+- ✅ 중복 액션 파일 정리 (link.ts → link-actions.ts)
+- ✅ Profile ID vs Clerk User ID 버그 수정
+- 📄 상세: `docs/CLERK_MIGRATION_GUIDE.md`

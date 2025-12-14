@@ -37,6 +37,21 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
 ]);
 
+// Routes that should be excluded from middleware entirely (short URLs)
+const isShortUrlRoute = (pathname: string) => {
+  // Exclude admin, api, _next, and static files
+  const excludedPrefixes = ['/admin', '/api', '/_next', '/shorten', '/sign-in', '/sign-up'];
+  const excludedExtensions = ['.ico', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.css', '.js'];
+
+  if (pathname === '/') return false;
+  if (excludedPrefixes.some(prefix => pathname.startsWith(prefix))) return false;
+  if (excludedExtensions.some(ext => pathname.endsWith(ext))) return false;
+
+  // Single segment paths like /abc123 are short URLs
+  const segments = pathname.split('/').filter(Boolean);
+  return segments.length === 1;
+};
+
 // Admin-only routes
 const isAdminRoute = createRouteMatcher(['/admin/users(.*)']);
 
@@ -49,12 +64,17 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.next();
   }
 
-  // 2. Redirect unauthenticated users to login
+  // 2. Allow short URL routes without authentication (e.g., /abc123)
+  if (isShortUrlRoute(pathname)) {
+    return NextResponse.next();
+  }
+
+  // 3. Redirect unauthenticated users to login
   if (!userId) {
     return NextResponse.redirect(new URL('/admin/login', request.url));
   }
 
-  // 3. Get user metadata
+  // 4. Get user metadata
   // Prefer sessionClaims for speed; fall back to Clerk user fetch if metadata missing
   let publicMetadata =
     (sessionClaims?.publicMetadata as { status?: string; role?: string }) || {};
@@ -73,12 +93,12 @@ export default clerkMiddleware(async (auth, request) => {
   const userStatus = publicMetadata.status || 'pending';
   const userRole = publicMetadata.role || 'user';
 
-  // 4. Handle admin routes
+  // 5. Handle admin routes
   if (!pathname.startsWith('/admin')) {
     return NextResponse.next();
   }
 
-  // 5. Redirect authenticated users from auth pages to appropriate dashboard
+  // 6. Redirect authenticated users from auth pages to appropriate dashboard
   if (
     pathname.startsWith('/admin/login') ||
     pathname.startsWith('/admin/register')
@@ -93,7 +113,7 @@ export default clerkMiddleware(async (auth, request) => {
     );
   }
 
-  // 6. Status pages: only allow matching status, otherwise redirect to dashboard
+  // 7. Status pages: only allow matching status, otherwise redirect to dashboard
   if (pathname === '/admin/pending') {
     if (userStatus === 'pending') return NextResponse.next();
     return NextResponse.redirect(new URL('/admin/dashboard', request.url));
@@ -103,7 +123,7 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url));
   }
 
-  // 7. Redirect non-approved users to their status page
+  // 8. Redirect non-approved users to their status page
   if (userStatus === 'pending') {
     return NextResponse.redirect(new URL('/admin/pending', request.url));
   }
@@ -111,13 +131,13 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.redirect(new URL('/admin/rejected', request.url));
   }
 
-  // 8. From here, only approved users can proceed
+  // 9. From here, only approved users can proceed
   // Check admin-only routes
   if (isAdminRoute(request) && userRole !== 'admin') {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url));
   }
 
-  // 9. Allow access
+  // 10. Allow access
   return NextResponse.next();
 });
 

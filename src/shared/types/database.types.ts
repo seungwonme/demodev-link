@@ -258,6 +258,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_profile_id: { Args: never; Returns: string }
       increment_click_count: { Args: { link_id: string }; Returns: undefined }
     }
     Enums: {

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Play } from "lucide-react";
 import { getYouTubeThumbnailUrl } from "../../utils/youtube";
 
@@ -33,10 +34,12 @@ export function YouTubeThumbnail({
       onClick={onClick}
       title={title || "YouTube 동영상 재생"}
     >
-      <img
+      <Image
         src={thumbnailUrl}
         alt={title || "YouTube video thumbnail"}
-        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+        fill
+        className="object-cover transition-transform group-hover:scale-105"
+        unoptimized
       />
 
       {/* 재생 버튼 오버레이 */}
