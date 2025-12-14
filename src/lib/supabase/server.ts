@@ -2,7 +2,8 @@
  * @file src/lib/supabase/server.ts
  * @description 서버 사이드에서 사용하는 Supabase 클라이언트 유틸리티
  *
- * Clerk JWT를 Supabase에 전달하여 RLS 정책에서 사용자 인증 가능.
+ * Clerk Third-Party Integration 방식 사용.
+ * Supabase에서 Clerk를 Auth Provider로 등록하면 JWT 템플릿 불필요.
  * auth.jwt() ->> 'sub'로 Clerk user ID에 접근 가능.
  *
  * @dependencies
@@ -22,17 +23,17 @@ export async function createClient() {
     throw new Error("Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY");
   }
 
-  // Clerk에서 Supabase용 JWT 토큰 가져오기
+  // Clerk Third-Party Integration: 템플릿 없이 기본 토큰 사용
   const { getToken } = await auth();
-  const supabaseToken = await getToken({ template: "supabase" });
+  const token = await getToken();
 
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       global: {
-        headers: supabaseToken
-          ? { Authorization: `Bearer ${supabaseToken}` }
+        headers: token
+          ? { Authorization: `Bearer ${token}` }
           : {},
       },
     }
