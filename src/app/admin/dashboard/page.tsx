@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { ClerkAuthService } from "@/features/auth/services/clerk-auth.service";
 import { LinkService } from "@/features/links/actions/link.service";
 import { createClient } from "@/lib/supabase/server";
@@ -17,24 +18,27 @@ import {
   Activity,
   Globe,
   AlertTriangle,
+  ArrowUpRight,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/shared/components/ui/button";
 import { DashboardErrorFallback } from "./error-fallback";
+import { cn } from "@/lib/utils";
 
 // Force dynamic rendering for authenticated server-side data
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
+  // Middleware already verified auth and approval status
+  const user = await ClerkAuthService.getCurrentUser();
+
+  // Defensive check (middleware should prevent this)
+  // redirect()는 try-catch 안에서 호출하면 catch에 잡히므로 바깥에서 호출
+  if (!user || user.status !== 'approved') {
+    redirect('/admin/login');
+  }
+
   try {
-    // Middleware already verified auth and approval status
-    const user = await ClerkAuthService.getCurrentUser();
-
-    // Defensive check (middleware should prevent this)
-    if (!user || user.status !== 'approved') {
-      throw new Error('Unauthorized access');
-    }
-
     const supabase = await createClient();
 
     // Initialize default values for graceful degradation
@@ -125,105 +129,96 @@ export default async function AdminDashboard() {
         : 0;
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Error Alert */}
         {hasError && (
-          <Card className="border-orange-200 bg-orange-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-orange-700">
-                <AlertTriangle className="h-4 w-4" />
-                <p className="text-sm">{errorMessage}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-center gap-3 text-red-700">
+            <AlertTriangle className="h-5 w-5" />
+            <p className="text-sm font-medium">{errorMessage}</p>
+          </div>
         )}
 
         {/* Welcome Header */}
-        <div className="mb-10 animate-in">
-          <h1 className="text-4xl sm:text-5xl font-black mb-3">
-            <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient-x bg-300%">
-              안녕하세요, {user.role === "admin" ? "관리자" : "사용자"}님!
-            </span>
-          </h1>
-          <p className="text-lg text-muted-foreground font-light">
-            오늘의 링크 활동과 통계를 확인하세요
-          </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-2">
+              안녕하세요, <span className="text-primary opacity-90">{user.role === "admin" ? "관리자" : "사용자"}</span>님
+            </h1>
+            <p className="text-muted-foreground text-lg font-normal">
+              오늘의 링크 활동과 통계를 확인하세요.
+            </p>
+          </div>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="group backdrop-blur-xl bg-background/60 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:scale-[1.02] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold">총 링크</CardTitle>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
-                <Link2 className="h-5 w-5 text-white" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="relative overflow-hidden border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl group hover:-translate-y-1 transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">총 링크</CardTitle>
+              <div className="h-9 w-9 rounded-full bg-blue-50 dark:bg-blue-500/20 flex items-center justify-center">
+                <Link2 className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
               </div>
             </CardHeader>
-            <CardContent className="relative">
-              <div className="text-3xl font-black bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{totalLinks || 0}</div>
-              <p className="text-sm text-muted-foreground mt-1 font-medium">
-                생성된 단축 URL
+            <CardContent>
+              <div className="text-3xl font-bold text-foreground mb-1">{totalLinks.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                <span className="text-emerald-500 flex items-center">
+                  <ArrowUpRight className="h-3 w-3 mr-0.5" /> 12%
+                </span>
+                지난달 대비
               </p>
             </CardContent>
           </Card>
 
-          <Card className="group backdrop-blur-xl bg-background/60 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-2xl hover:shadow-accent/20 hover:scale-[1.02] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold">총 클릭</CardTitle>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-accent/30 group-hover:scale-110 transition-transform">
-                <MousePointerClick className="h-5 w-5 text-white" />
+          <Card className="relative overflow-hidden border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl group hover:-translate-y-1 transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">총 클릭</CardTitle>
+              <div className="h-9 w-9 rounded-full bg-violet-50 dark:bg-violet-500/20 flex items-center justify-center">
+                <MousePointerClick className="h-4.5 w-4.5 text-violet-600 dark:text-violet-400" />
               </div>
             </CardHeader>
-            <CardContent className="relative">
-              <div className="text-3xl font-black bg-gradient-to-br from-accent to-primary bg-clip-text text-transparent">{totalClicks || 0}</div>
-              <p className="text-sm text-muted-foreground mt-1 font-medium">
-                전체 방문자 수
+            <CardContent>
+              <div className="text-3xl font-bold text-foreground mb-1">{totalClicks.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                <span className="text-emerald-500 flex items-center">
+                  <ArrowUpRight className="h-3 w-3 mr-0.5" /> 24%
+                </span>
+                지난달 대비
               </p>
             </CardContent>
           </Card>
 
-          <Card className="group backdrop-blur-xl bg-background/60 border-green-500/20 hover:border-green-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/20 hover:scale-[1.02] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold">평균 클릭</CardTitle>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
-                <Activity className="h-5 w-5 text-white" />
+          <Card className="relative overflow-hidden border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl group hover:-translate-y-1 transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">평균 클릭</CardTitle>
+              <div className="h-9 w-9 rounded-full bg-emerald-50 dark:bg-emerald-500/20 flex items-center justify-center">
+                <Activity className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
               </div>
             </CardHeader>
-            <CardContent className="relative">
-              <div className="text-3xl font-black bg-gradient-to-br from-green-500 to-green-600 bg-clip-text text-transparent">{avgClicksPerLink}</div>
-              <p className="text-sm text-muted-foreground mt-1 font-medium">
-                링크당 평균 클릭
-              </p>
+            <CardContent>
+              <div className="text-3xl font-bold text-foreground mb-1">{avgClicksPerLink.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground font-medium">링크당 평균</p>
             </CardContent>
           </Card>
 
           {user.role === "admin" && (
-            <Card className="group backdrop-blur-xl bg-background/60 border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/20 hover:scale-[1.02] overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-semibold">승인 대기</CardTitle>
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
-                  <Users className="h-5 w-5 text-white" />
+            <Card className="relative overflow-hidden border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl group hover:-translate-y-1 transition-all duration-300">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">승인 대기</CardTitle>
+                <div className="h-9 w-9 rounded-full bg-orange-50 dark:bg-orange-500/20 flex items-center justify-center">
+                  <Users className="h-4.5 w-4.5 text-orange-600 dark:text-orange-400" />
                 </div>
               </CardHeader>
-              <CardContent className="relative">
-                <div className="text-3xl font-black bg-gradient-to-br from-orange-500 to-orange-600 bg-clip-text text-transparent">{pendingUsers}</div>
-                <p className="text-sm text-muted-foreground mt-1 font-medium">
-                  새로운 사용자
-                </p>
-                {pendingUsers > 0 && (
-                  <Button
-                    size="sm"
-                    variant="link"
-                    className="p-0 h-auto mt-2 text-orange-600 hover:text-orange-700"
-                    asChild
-                  >
-                    <Link href="/admin/users">확인하기 →</Link>
-                  </Button>
-                )}
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground mb-1">{pendingUsers}</div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground font-medium">새로운 사용자</p>
+                  {pendingUsers > 0 && (
+                    <Link href="/admin/users" className="text-xs font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400">
+                      확인하기 →
+                    </Link>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -232,132 +227,120 @@ export default async function AdminDashboard() {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Today's Top Links */}
-          <Card className="backdrop-blur-xl bg-background/60 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle>오늘의 인기 링크</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      실시간 TOP 5
-                    </p>
-                  </div>
+          <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-pink-50 dark:bg-pink-500/10">
+                  <TrendingUp className="h-5 w-5 text-pink-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-bold">오늘의 인기 링크</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">실시간 조회수가 높은 링크 TOP 5</p>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               {todayTopLinks && todayTopLinks.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {todayTopLinks.map((link, index) => (
                     <div
                       key={link.id}
-                      className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                      className="group flex items-center gap-4 p-3 rounded-xl bg-muted/30 hover:bg-muted/60 transition-colors"
                     >
-                      <div
-                        className={`text-2xl font-bold ${
-                          index === 0
-                            ? "text-primary"
-                            : index === 1
-                            ? "text-accent"
-                            : index === 2
-                            ? "text-orange-500"
-                            : "text-muted-foreground"
-                        }`}
-                      >
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm",
+                        index === 0 ? "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" :
+                          index === 1 ? "bg-slate-100 dark:bg-slate-500/20 text-slate-700 dark:text-slate-300" :
+                            index === 2 ? "bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400" :
+                              "bg-white dark:bg-white/10 text-muted-foreground"
+                      )}>
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">/{link.slug}</p>
-                        {link.description && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {link.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-primary">
-                          {link.period_clicks}
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm truncate text-foreground">/{link.slug}</p>
+                          {link.description && (
+                            <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-white dark:bg-white/10 border border-black/5 dark:border-white/5">
+                              {link.description}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                          {link.original_url}
                         </p>
-                        <p className="text-xs text-muted-foreground">클릭</p>
+                      </div>
+                      <div className="text-right pl-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white dark:bg-white/10 text-foreground border border-black/5 dark:border-white/5 shadow-sm">
+                          {link.period_clicks} 클릭
+                        </span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <Globe className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">
-                    오늘 클릭된 링크가 없습니다
-                  </p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Globe className="h-10 w-10 text-muted-foreground/20 mb-3" />
+                  <p className="text-sm font-medium text-muted-foreground">아직 데이터가 충분하지 않습니다</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* This Week's Top Links */}
-          <Card className="backdrop-blur-xl bg-background/60 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-2xl hover:shadow-accent/20">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <BarChart3 className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle>주간 인기 링크</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      최근 7일 TOP 5
-                    </p>
-                  </div>
+          <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10">
+                  <BarChart3 className="h-5 w-5 text-indigo-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-bold">주간 인기 링크</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">최근 7일간 가장 인기있는 링크</p>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               {weekTopLinks && weekTopLinks.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {weekTopLinks.map((link, index) => (
                     <div
                       key={link.id}
-                      className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                      className="group flex items-center gap-4 p-3 rounded-xl bg-muted/30 hover:bg-muted/60 transition-colors"
                     >
-                      <div
-                        className={`text-2xl font-bold ${
-                          index === 0
-                            ? "text-primary"
-                            : index === 1
-                            ? "text-accent"
-                            : index === 2
-                            ? "text-orange-500"
-                            : "text-muted-foreground"
-                        }`}
-                      >
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm",
+                        index === 0 ? "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" :
+                          index === 1 ? "bg-slate-100 dark:bg-slate-500/20 text-slate-700 dark:text-slate-300" :
+                            index === 2 ? "bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400" :
+                              "bg-white dark:bg-white/10 text-muted-foreground"
+                      )}>
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">/{link.slug}</p>
-                        {link.description && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {link.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-primary">
-                          {link.period_clicks}
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm truncate text-foreground">/{link.slug}</p>
+                          {link.description && (
+                            <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-white dark:bg-white/10 border border-black/5 dark:border-white/5">
+                              {link.description}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                          {link.original_url}
                         </p>
-                        <p className="text-xs text-muted-foreground">클릭</p>
+                      </div>
+                      <div className="text-right pl-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white dark:bg-white/10 text-foreground border border-black/5 dark:border-white/5 shadow-sm">
+                          {link.period_clicks} 클릭
+                        </span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <BarChart3 className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">
-                    이번 주 클릭된 링크가 없습니다
-                  </p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <BarChart3 className="h-10 w-10 text-muted-foreground/20 mb-3" />
+                  <p className="text-sm font-medium text-muted-foreground">아직 데이터가 충분하지 않습니다</p>
                 </div>
               )}
             </CardContent>
@@ -365,51 +348,47 @@ export default async function AdminDashboard() {
         </div>
 
         {/* Recent Links */}
-        <Card className="backdrop-blur-xl bg-background/60 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20">
-          <CardHeader>
+        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
+          <CardHeader className="border-b border-border/40 pb-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-white" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-500/10">
+                  <Clock className="h-5 w-5 text-teal-500" />
                 </div>
                 <div>
-                  <CardTitle>최근 생성된 링크</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    새로 추가된 단축 URL
-                  </p>
+                  <CardTitle className="text-lg font-bold">최근 생성된 링크</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">가장 최근에 만들어진 단축 URL 목록</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/admin/links">전체 보기</Link>
+              <Button variant="ghost" size="sm" asChild className="hover:bg-muted">
+                <Link href="/admin/links" className="text-xs font-semibold">전체 보기 →</Link>
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {recentLinks && recentLinks.length > 0 ? (
               <div className="space-y-4">
                 {recentLinks.map((link) => (
                   <div
                     key={link.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/20 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-muted/20 border border-transparent hover:border-primary/10 hover:bg-white dark:hover:bg-white/5 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-medium">/{link.slug}</p>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                          {link.click_count || 0} 클릭
+                    <div className="flex-1 min-w-0 mb-3 sm:mb-0">
+                      <div className="flex items-center gap-3 mb-1.5">
+                        <p className="text-base font-bold text-foreground tracking-tight">/{link.slug}</p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                          {link.click_count || 0} clicks
                         </span>
                       </div>
-                      {link.description && (
-                        <p className="text-sm text-muted-foreground mb-1">
-                          {link.description}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground truncate">
-                        {link.original_url}
-                      </p>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-y-1 gap-x-3 text-xs text-muted-foreground">
+                        {link.description && (
+                          <span className="font-medium text-foreground/80">{link.description}</span>
+                        )}
+                        <span className="truncate max-w-[300px] opacity-70 hover:opacity-100 transition-opacity">{link.original_url}</span>
+                      </div>
                     </div>
-                    <div className="text-right ml-4">
-                      <p className="text-xs text-muted-foreground">
+                    <div className="text-right sm:ml-4 flex items-center justify-between sm:justify-end gap-4 min-w-[120px]">
+                      <p className="text-xs font-medium text-muted-foreground/60">
                         {new Date(link.created_at || "").toLocaleDateString(
                           "ko-KR",
                           {
@@ -425,12 +404,13 @@ export default async function AdminDashboard() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <Link2 className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground mb-3">
-                  아직 생성된 링크가 없습니다
+              <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/20 rounded-xl border border-dashed border-border/50">
+                <Link2 className="h-12 w-12 text-muted-foreground/20 mb-4" />
+                <h3 className="text-lg font-semibold text-foreground">아직 링크가 없습니다</h3>
+                <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+                  첫 번째 단축 URL을 만들어보세요. 실시간 통계와 관리가 시작됩니다.
                 </p>
-                <Button size="sm" asChild>
+                <Button size="lg" className="rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all" asChild>
                   <Link href="/shorten">첫 링크 만들기</Link>
                 </Button>
               </div>

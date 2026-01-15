@@ -18,7 +18,8 @@ import {
   Smartphone,
   Monitor,
   Tablet,
-  Calendar
+  Calendar,
+  ArrowRight
 } from "lucide-react";
 import { Line, Doughnut } from "react-chartjs-2";
 import {
@@ -34,6 +35,8 @@ import {
   Legend,
   ChartOptions,
 } from "chart.js";
+import { cn } from "@/lib/utils";
+import { getBaseUrl } from "@/lib/url";
 
 ChartJS.register(
   CategoryScale,
@@ -168,8 +171,9 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
 
   if (!selectedLinkId || loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center h-96 gap-4">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+        <p className="text-muted-foreground animate-pulse">데이터를 분석하고 있습니다...</p>
       </div>
     );
   }
@@ -184,28 +188,32 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
       {
         label: "시간대별 클릭 수",
         data: analytics.clicksByHour.map((h) => h.clicks),
-        backgroundColor: "rgba(59, 130, 246, 0.5)",
-        borderColor: "rgb(59, 130, 246)",
+        backgroundColor: "rgba(46, 108, 255, 0.1)", // Primary color with opacity
+        borderColor: "#2E6CFF", // Primary color
         borderWidth: 2,
+        tension: 0.4,
+        fill: true,
       },
     ],
   };
 
   const deviceChartData = {
-    labels: analytics.clicksByDevice.map((d) => 
-      d.device === "Desktop" ? "데스크톱" : 
-      d.device === "Mobile" ? "모바일" : 
-      d.device === "Tablet" ? "태블릿" : "기타"
+    labels: analytics.clicksByDevice.map((d) =>
+      d.device === "Desktop" ? "데스크톱" :
+        d.device === "Mobile" ? "모바일" :
+          d.device === "Tablet" ? "태블릿" : "기타"
     ),
     datasets: [
       {
         data: analytics.clicksByDevice.map((d) => d.clicks),
         backgroundColor: [
-          "rgba(59, 130, 246, 0.8)",
-          "rgba(16, 185, 129, 0.8)",
-          "rgba(251, 146, 60, 0.8)",
-          "rgba(147, 51, 234, 0.8)",
+          "#2E6CFF", // Primary
+          "#10B981", // Emerald
+          "#F59E0B", // Amber
+          "#8B5CF6", // Violet
         ],
+        borderWidth: 0,
+        hoverOffset: 4,
       },
     ],
   };
@@ -217,11 +225,33 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
       legend: {
         display: false,
       },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: 12,
+        titleFont: { size: 13 },
+        bodyFont: { size: 13 },
+        cornerRadius: 8,
+        displayColors: false,
+      }
     },
     scales: {
       y: {
         beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)',
+        },
+        border: {
+          display: false,
+        }
       },
+      x: {
+        grid: {
+          display: false,
+        },
+        border: {
+          display: false,
+        }
+      }
     },
   };
 
@@ -231,18 +261,24 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
     plugins: {
       legend: {
         position: "right",
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 20,
+        }
       },
     },
+    cutout: "70%",
   };
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case "up":
-        return <TrendingUp className="h-5 w-5 text-green-600" />;
+        return <TrendingUp className="h-4 w-4 text-emerald-500" />;
       case "down":
-        return <TrendingDown className="h-5 w-5 text-red-600" />;
+        return <TrendingDown className="h-4 w-4 text-rose-500" />;
       default:
-        return <Minus className="h-5 w-5 text-gray-600" />;
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -260,26 +296,24 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* Link Selector */}
       {!propLinkId && (
-        <div className="mb-6">
+        <div className="mb-8">
           <Select value={selectedLinkId} onValueChange={setSelectedLinkId}>
-            <SelectTrigger className="w-full max-w-md">
+            <SelectTrigger className="w-full max-w-md h-12 bg-white dark:bg-white/5 border-black/5 dark:border-white/10 shadow-sm rounded-xl">
               <SelectValue placeholder="분석할 링크를 선택하세요" />
             </SelectTrigger>
             <SelectContent>
               {links.map((link) => (
                 <SelectItem key={link.id} value={link.id}>
-                  <div className="flex flex-col">
+                  <div className="flex flex-col py-1">
                     <div className="flex items-center gap-2">
-                      <span>{link.description || link.original_url}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {link.period_clicks ?? link.click_count} 클릭
-                      </Badge>
+                      <span className="font-medium text-foreground">{link.description || '제목 없음'}</span>
+                      {link.slug && <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">/{link.slug}</span>}
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {link.slug} - {link.original_url}
+                    <span className="text-xs text-muted-foreground mt-0.5 truncate max-w-[300px]">
+                      {link.original_url}
                     </span>
                   </div>
                 </SelectItem>
@@ -290,86 +324,73 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
       )}
 
       {/* Date Range Selector */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Calendar className="h-5 w-5" />
+      <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg font-bold">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+              <Calendar className="h-5 w-5" />
+            </div>
             날짜 범위 선택
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex flex-wrap gap-2">
-              <Button
-                variant={dateRangePreset === '7d' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('7d')}
-              >
-                최근 7일
-              </Button>
-              <Button
-                variant={dateRangePreset === '30d' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('30d')}
-              >
-                최근 30일
-              </Button>
-              <Button
-                variant={dateRangePreset === '3m' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('3m')}
-              >
-                최근 3개월
-              </Button>
-              <Button
-                variant={dateRangePreset === '6m' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('6m')}
-              >
-                최근 6개월
-              </Button>
-              <Button
-                variant={dateRangePreset === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('all')}
-              >
-                전체 기간
-              </Button>
-              <Button
-                variant={dateRangePreset === 'custom' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('custom')}
-              >
-                사용자 정의
-              </Button>
+              {[
+                { key: '7d', label: '최근 7일' },
+                { key: '30d', label: '최근 30일' },
+                { key: '3m', label: '최근 3개월' },
+                { key: '6m', label: '최근 6개월' },
+                { key: 'all', label: '전체 기간' },
+                { key: 'custom', label: '사용자 정의' },
+              ].map((range) => (
+                <Button
+                  key={range.key}
+                  variant={dateRangePreset === range.key ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setDateRangePreset(range.key as DateRangePreset)}
+                  className={cn(
+                    "rounded-full px-4 text-xs font-medium transition-all duration-300",
+                    dateRangePreset === range.key
+                      ? "shadow-md shadow-primary/20"
+                      : "bg-muted/30 hover:bg-muted text-muted-foreground"
+                  )}
+                >
+                  {range.label}
+                </Button>
+              ))}
             </div>
 
             {/* Custom Date Range Inputs */}
             {dateRangePreset === 'custom' && (
-              <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="flex items-end gap-4 p-4 rounded-xl bg-muted/20 border border-black/5 dark:border-white/5 animate-in fade-in slide-in-from-top-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">시작일</label>
+                  <label className="text-xs font-semibold text-muted-foreground ml-1">시작일</label>
                   <input
                     type="date"
                     value={customStartDate}
                     onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
+                    className="h-10 px-3 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-black/20 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
+                <div className="h-10 flex items-center text-muted-foreground">
+                  <ArrowRight className="h-4 w-4" />
+                </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">종료일</label>
+                  <label className="text-xs font-semibold text-muted-foreground ml-1">종료일</label>
                   <input
                     type="date"
                     value={customEndDate}
                     onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
+                    className="h-10 px-3 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-black/20 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
             )}
 
             {/* Display Selected Range */}
-            <div className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/20 w-fit px-3 py-1.5 rounded-lg">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               {dateRangePreset === 'all' && '전체 데이터를 표시합니다'}
               {dateRangePreset === '7d' && '최근 7일 데이터를 표시합니다'}
               {dateRangePreset === '30d' && '최근 30일 데이터를 표시합니다'}
@@ -386,25 +407,30 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
       {selectedLinkId && (() => {
         const currentLink = links.find(l => l.id === selectedLinkId);
         if (!currentLink) return null;
-        
+
         return (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">링크 정보</CardTitle>
+          <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-bold">선택된 링크 정보</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div>
-                  <span className="text-sm font-medium">설명: </span>
-                  <span className="text-sm">{currentLink.description || '설명 없음'}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/20 p-5 rounded-xl border border-black/5 dark:border-white/5">
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Title</span>
+                  <p className="text-base font-medium text-foreground">{currentLink.description || '설명 없음'}</p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium">URL: </span>
-                  <span className="text-sm text-muted-foreground">{currentLink.original_url}</span>
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Short URL</span>
+                  <p className="text-base font-medium text-primary flex items-center gap-1 hover:underline cursor-pointer">
+                    {getBaseUrl()}/{currentLink.slug}
+                    <ArrowRight className="h-3 w-3 -rotate-45" />
+                  </p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium">단축 주소: </span>
-                  <span className="text-sm text-muted-foreground">{window.location.origin}/{currentLink.slug}</span>
+                <div className="col-span-1 md:col-span-2 space-y-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Original Destination</span>
+                  <p className="text-sm text-muted-foreground break-all bg-white dark:bg-black/10 p-2 rounded border border-black/5 dark:border-white/5 font-mono">
+                    {currentLink.original_url}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -414,68 +440,79 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
+        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl hover:-translate-y-1 transition-transform cursor-default">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">총 클릭 수</CardTitle>
-            <MousePointer className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">총 클릭 수</CardTitle>
+            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
+              <MousePointer className="h-4 w-4" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.totalClicks}</div>
-            <div className="flex items-center mt-2">
+            <div className="text-3xl font-black text-foreground">{analytics.totalClicks.toLocaleString()}</div>
+            <div className="flex items-center mt-2 p-1 px-2 rounded-md bg-muted/50 w-fit">
               {getTrendIcon(analytics.clickTrend)}
-              <span className="text-xs text-muted-foreground ml-1">
-                {analytics.clickTrend === "up" ? "상승 추세" : 
-                 analytics.clickTrend === "down" ? "하락 추세" : "안정적"}
+              <span className="text-xs font-medium ml-1.5">
+                {analytics.clickTrend === "up" ? "상승 추세" :
+                  analytics.clickTrend === "down" ? "하락 추세" : "변동 없음"}
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl hover:-translate-y-1 transition-transform cursor-default">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">고유 방문자</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">고유 방문자</CardTitle>
+            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+              <Users className="h-4 w-4" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.uniqueClicks}</div>
-            <Progress 
-              value={(analytics.uniqueClicks / analytics.totalClicks) * 100} 
-              className="mt-2" 
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              전환율: {analytics.conversionRate.toFixed(1)}%
+            <div className="text-3xl font-black text-foreground">{analytics.uniqueClicks.toLocaleString()}</div>
+            <div className="mt-3">
+              <Progress
+                value={(analytics.uniqueClicks / Math.max(analytics.totalClicks, 1)) * 100}
+                className="h-1.5"
+              // indicatorClassName="bg-emerald-500" // Requires custom progress component usually
+              />
+            </div>
+            <p className="text-xs font-medium text-muted-foreground mt-2 flex items-center">
+              <span className="text-emerald-500 mr-1.5">{analytics.conversionRate.toFixed(1)}%</span> 전환율
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl hover:-translate-y-1 transition-transform cursor-default">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">일 평균 클릭</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">일 평균 클릭</CardTitle>
+            <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400">
+              <Clock className="h-4 w-4" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-black text-foreground">
               {analytics.avgClicksPerDay.toFixed(1)}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs font-medium text-muted-foreground mt-2">
               하루 평균 클릭 수
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl hover:-translate-y-1 transition-transform cursor-default">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">최적 시간대</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">최적 시간대</CardTitle>
+            <div className="p-2 rounded-lg bg-violet-50 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400">
+              <TrendingUp className="h-4 w-4" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {analytics.clicksByHour.reduce((max, current) => 
+            <div className="text-3xl font-black text-foreground">
+              {analytics.clicksByHour.length > 0 ? analytics.clicksByHour.reduce((max, current) =>
                 current.clicks > max.clicks ? current : max
-              ).hour}시
+              ).hour + "시" : "-"}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              가장 많은 클릭 시간
+            <p className="text-xs font-medium text-muted-foreground mt-2">
+              가장 많은 클릭이 발생하는 시간
             </p>
           </CardContent>
         </Card>
@@ -484,27 +521,34 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hourly Clicks Chart */}
-        <Card>
+        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-lg font-bold">
+              <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500">
+                <Clock className="h-5 w-5" />
+              </div>
               시간대별 클릭 분포
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-[300px] w-full mt-4">
               <Line data={hourlyChartData} options={chartOptions} />
             </div>
           </CardContent>
         </Card>
 
         {/* Device Distribution */}
-        <Card>
+        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle>디바이스별 클릭 분포</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg font-bold">
+              <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-500">
+                <Smartphone className="h-5 w-5" />
+              </div>
+              디바이스별 클릭 분포
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-[300px] w-full mt-4 flex justify-center">
               <Doughnut data={deviceChartData} options={doughnutOptions} />
             </div>
           </CardContent>
@@ -512,31 +556,38 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
       </div>
 
       {/* Device Details */}
-      <Card>
+      <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
         <CardHeader>
-          <CardTitle>디바이스별 상세 통계</CardTitle>
+          <CardTitle className="text-lg font-bold">디바이스별 상세 통계</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {analytics.clicksByDevice.map((device) => {
-              const percentage = (device.clicks / analytics.totalClicks) * 100;
+              const percentage = (device.clicks / Math.max(analytics.totalClicks, 1)) * 100;
               return (
-                <div key={device.device} className="flex items-center space-x-4">
-                  <div className="flex items-center gap-2 w-24">
-                    {getDeviceIcon(device.device)}
-                    <span className="text-sm font-medium">
-                      {device.device === "Desktop" ? "데스크톱" : 
-                       device.device === "Mobile" ? "모바일" : 
-                       device.device === "Tablet" ? "태블릿" : "기타"}
+                <div key={device.device} className="flex items-center space-x-4 p-3 rounded-xl hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-3 w-32">
+                    <div className="p-2 rounded-lg bg-muted text-muted-foreground">
+                      {getDeviceIcon(device.device)}
+                    </div>
+                    <span className="text-sm font-semibold text-foreground">
+                      {device.device === "Desktop" ? "데스크톱" :
+                        device.device === "Mobile" ? "모바일" :
+                          device.device === "Tablet" ? "태블릿" : "기타"}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <Progress value={percentage} />
+                    <div className="h-2.5 w-full bg-muted/40 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
                   <div className="w-24 text-right">
-                    <span className="text-sm font-medium">{device.clicks} 클릭</span>
-                    <span className="text-xs text-muted-foreground ml-1">
-                      ({percentage.toFixed(1)}%)
+                    <span className="block text-sm font-bold text-foreground">{device.clicks}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {percentage.toFixed(1)}%
                     </span>
                   </div>
                 </div>
@@ -547,33 +598,37 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
       </Card>
 
       {/* Geographic Distribution (Sample Data) */}
-      <Card>
+      <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg font-bold">
+            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500">
+              <Globe className="h-5 w-5" />
+            </div>
             지역별 클릭 분포
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {analytics.clicksByCountry.map((country) => {
-              const percentage = (country.clicks / analytics.totalClicks) * 100;
+              const percentage = (country.clicks / Math.max(analytics.totalClicks, 1)) * 100;
               return (
-                <div key={country.country} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{country.country}</Badge>
+                <div key={country.country} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/30 transition-colors border border-transparent hover:border-muted">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="secondary" className="px-2 py-1 text-sm">{country.country}</Badge>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Progress value={percentage} className="w-32" />
+                    <div className="w-32 h-2.5 bg-muted/40 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${percentage}%` }} />
+                    </div>
                     <span className="text-sm font-medium w-20 text-right">
-                      {country.clicks} ({percentage.toFixed(1)}%)
+                      {country.clicks} <span className="text-muted-foreground text-xs font-normal">({percentage.toFixed(1)}%)</span>
                     </span>
                   </div>
                 </div>
               );
             })}
           </div>
-          <p className="text-xs text-muted-foreground mt-4">
+          <p className="text-[10px] text-muted-foreground mt-6 text-right bg-muted/30 p-2 rounded-md inline-block float-right">
             * 지역 데이터는 샘플 데이터입니다. 실제 구현 시 IP 기반 지역 분석이 필요합니다.
           </p>
         </CardContent>

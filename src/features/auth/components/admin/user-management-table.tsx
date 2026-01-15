@@ -122,7 +122,7 @@ export default function UserManagementTable({
 
   return (
     <TooltipProvider>
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-xl border-none bg-transparent">
         <Table>
           <TableHeader>
             <TableRow>
@@ -166,15 +166,15 @@ export default function UserManagementTable({
                         user.status === "approved"
                           ? "default"
                           : user.status === "pending"
-                          ? "secondary"
-                          : "destructive"
+                            ? "secondary"
+                            : "destructive"
                       }
                     >
                       {user.status === "approved"
                         ? "승인됨"
                         : user.status === "pending"
-                        ? "대기중"
-                        : "거절됨"}
+                          ? "대기중"
+                          : "거절됨"}
                     </Badge>
                   </TableCell>
                   <TableCell>

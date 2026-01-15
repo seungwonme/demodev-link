@@ -130,7 +130,7 @@ export function UTMBuilder({ originalUrl, onUTMChange, disabled = false }: UTMBu
   return (
     <div className="space-y-4">
       {/* UTM Builder Toggle */}
-      <Card className="border-accent/20 bg-accent/5">
+      <Card className="border-none bg-accent/5 shadow-none">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -158,10 +158,10 @@ export function UTMBuilder({ originalUrl, onUTMChange, disabled = false }: UTMBu
 
       {/* UTM Parameters Form */}
       {enabled && (
-        <Card className="animate-in slide-in-from-top-2 border-accent/20">
-          <CardContent className="pt-6 space-y-6">
+        <Card className="animate-in slide-in-from-top-2 border-none bg-transparent shadow-none">
+          <CardContent className="pt-0 space-y-6 px-0">
             {/* Info Alert */}
-            <Alert className="border-accent/20 bg-accent/5">
+            <Alert className="border-none bg-accent/5">
               <Info className="h-4 w-4 text-accent" />
               <AlertDescription className="text-sm">
                 UTM 파라미터는 Google Analytics 등의 분석 도구에서 캠페인 성과를 추적하는 데 사용됩니다.
@@ -186,7 +186,7 @@ export function UTMBuilder({ originalUrl, onUTMChange, disabled = false }: UTMBu
                       onChange={(e) => handleUTMChange(field.key, e.target.value)}
                       placeholder={field.placeholder}
                       disabled={disabled}
-                      className="transition-all focus:scale-[1.01]"
+                      className="transition-all focus:scale-[1.01] border-black/5 dark:border-white/10 bg-white/50 dark:bg-black/20 shadow-sm"
                     />
                     <p className="text-xs text-muted-foreground">
                       {field.description}
@@ -204,7 +204,7 @@ export function UTMBuilder({ originalUrl, onUTMChange, disabled = false }: UTMBu
                   미리보기
                 </Label>
                 <div className="relative">
-                  <div className="p-3 pr-12 rounded-lg bg-muted/50 border border-accent/20 break-all text-sm font-mono">
+                  <div className="p-3 pr-12 rounded-lg bg-muted/50 border-none break-all text-sm font-mono">
                     {finalUrl}
                   </div>
                   <Button

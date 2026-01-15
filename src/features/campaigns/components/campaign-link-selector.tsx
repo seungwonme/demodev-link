@@ -34,6 +34,7 @@ interface CampaignLinkSelectorProps {
   campaign: Campaign;
   onClose: () => void;
   onLinkAdded: (link: Link) => void;
+  onLinksAdded?: (links: Link[]) => void;
 }
 
 export function CampaignLinkSelector({
@@ -41,6 +42,7 @@ export function CampaignLinkSelector({
   campaign,
   onClose,
   onLinkAdded,
+  onLinksAdded,
 }: CampaignLinkSelectorProps) {
   // 기존 링크 관련 상태
   const [links, setLinks] = useState<Link[]>([]);
@@ -221,7 +223,12 @@ export function CampaignLinkSelector({
         toast.success(
           `${result.data.length}개의 링크가 캠페인에 추가되었습니다.`
         );
-        result.data.forEach((link) => onLinkAdded(link));
+        // 다중 링크 콜백이 있으면 배열로 한 번에 전달, 없으면 개별 호출
+        if (onLinksAdded) {
+          onLinksAdded(result.data);
+        } else {
+          result.data.forEach((link) => onLinkAdded(link));
+        }
         setSelectedTemplateIds(new Set());
       } else {
         toast.error(result.error || "링크 생성에 실패했습니다.");
@@ -244,16 +251,16 @@ export function CampaignLinkSelector({
         </DialogHeader>
 
         <Tabs defaultValue="existing" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="existing" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-3 bg-muted dark:bg-white/5">
+            <TabsTrigger value="existing" className="flex items-center gap-2 data-[state=active]:bg-background dark:data-[state=active]:bg-white/15 data-[state=active]:text-foreground">
               <Link2 className="h-4 w-4" />
               기존 링크
             </TabsTrigger>
-            <TabsTrigger value="new" className="flex items-center gap-2">
+            <TabsTrigger value="new" className="flex items-center gap-2 data-[state=active]:bg-background dark:data-[state=active]:bg-white/15 data-[state=active]:text-foreground">
               <Sparkles className="h-4 w-4" />
               새 링크
             </TabsTrigger>
-            <TabsTrigger value="template" className="flex items-center gap-2">
+            <TabsTrigger value="template" className="flex items-center gap-2 data-[state=active]:bg-background dark:data-[state=active]:bg-white/15 data-[state=active]:text-foreground">
               <FileText className="h-4 w-4" />
               템플릿
             </TabsTrigger>

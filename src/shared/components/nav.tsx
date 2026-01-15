@@ -9,10 +9,8 @@ import {
   X,
   Sun,
   Moon,
-  Link2,
   Home,
   Shield,
-  Sparkles,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -36,69 +34,63 @@ function NavigationContent() {
   }, []);
 
   const navItems = [
-    { href: "/", label: "홈", icon: Home },
-    { href: "/admin/login", label: "관리자", icon: Shield },
+    { href: "/", label: "Home", icon: Home },
+    { href: "/admin/login", label: "Admin", icon: Shield },
   ];
 
   return (
     <nav
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-500",
+        "sticky top-0 z-50 w-full transition-all duration-300 border-b",
         isScrolled
-          ? "bg-background/70 backdrop-blur-2xl border-b border-primary/10 shadow-lg shadow-primary/5"
-          : "bg-transparent backdrop-blur-sm",
+          ? "bg-background/80 backdrop-blur-xl border-border/50"
+          : "bg-transparent border-transparent",
       )}
     >
       <div className="container mx-auto px-4">
-        <div className="flex h-20 items-center justify-between">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link
             href="/"
-            className="group flex items-center gap-3 text-xl font-black hover:scale-105 transition-all duration-300"
+            className="text-lg font-bold tracking-tight hover:opacity-80 transition-opacity"
           >
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30 group-hover:shadow-primary/50 group-hover:rotate-12 transition-all duration-300">
-              <Link2 className="h-5 w-5 text-white" />
-            </div>
-            <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient-x bg-300% text-2xl">DemoLink</span>
+            DemoLink
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex md:items-center md:gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
+          <div className="hidden md:flex md:items-center md:gap-6">
+            <div className="flex items-center gap-1">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "relative flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-300",
-                    isActive
-                      ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary shadow-lg shadow-primary/20"
-                      : "hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 hover:text-primary",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                  {isActive && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-8 bg-gradient-to-r from-primary to-accent rounded-full" />
-                  )}
-                </Link>
-              );
-            })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "text-sm font-medium transition-colors hover:text-foreground px-4 py-2 rounded-full",
+                      isActive
+                        ? "text-foreground bg-secondary/80"
+                        : "text-muted-foreground hover:bg-secondary/40"
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
 
-            <div className="ml-4 flex items-center gap-2">
+            <div className="flex items-center gap-3 pl-2 border-l border-border/50 h-6">
               {/* Theme Toggle */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="rounded-xl hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 transition-all duration-300 hover:scale-110"
+                className="rounded-full h-9 w-9 text-muted-foreground hover:text-foreground"
               >
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">테마 변경</span>
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle Theme</span>
               </Button>
 
               {/* User Button or CTA */}
@@ -107,19 +99,18 @@ function NavigationContent() {
                   <UserButton
                     appearance={{
                       elements: {
-                        avatarBox: "h-9 w-9",
-                        userButtonTrigger: "focus:shadow-none hover:scale-110 transition-transform duration-300"
+                        avatarBox: "h-8 w-8",
+                        userButtonTrigger: "focus:shadow-none"
                       }
                     }}
                   />
                 ) : (
                   <Button
                     size="sm"
-                    className="hidden lg:flex h-10 px-6 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-105"
+                    className="h-9 px-5 rounded-full font-medium shadow-sm"
                     asChild
                   >
                     <Link href="/admin/register">
-                      <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
                       시작하기
                     </Link>
                   </Button>
@@ -134,21 +125,21 @@ function NavigationContent() {
               variant="ghost"
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="rounded-lg"
+              className="rounded-full h-9 w-9"
             >
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Button>
 
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
-              <span className="sr-only">메뉴 열기</span>
+              <span className="sr-only">Menu</span>
               {isOpen ? (
-                <X className="block h-6 w-6" />
+                <X className="block h-5 w-5" />
               ) : (
-                <Menu className="block h-6 w-6" />
+                <Menu className="block h-5 w-5" />
               )}
             </button>
           </div>
@@ -157,13 +148,12 @@ function NavigationContent() {
         {/* Mobile Navigation */}
         <div
           className={cn(
-            "md:hidden overflow-hidden transition-all duration-300",
-            isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+            "md:hidden overflow-hidden transition-all duration-300 ease-in-out",
+            isOpen ? "max-h-96 opacity-100 border-t border-border/50" : "max-h-0 opacity-0",
           )}
         >
-          <div className="py-3 space-y-1">
+          <div className="py-4 space-y-2">
             {navItems.map((item) => {
-              const Icon = item.icon;
               const isActive = pathname === item.href;
 
               return (
@@ -171,40 +161,31 @@ function NavigationContent() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all duration-300",
+                    "flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary shadow-lg shadow-primary/20"
-                      : "hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 hover:text-primary",
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
                   )}
                   onClick={() => setIsOpen(false)}
                 >
-                  <Icon className="h-5 w-5" />
+                  <item.icon className="h-4 w-4" />
                   {item.label}
                 </Link>
               );
             })}
 
             {isLoaded && (
-              <div className="pt-4 mt-4 border-t border-primary/10">
+              <div className="pt-4 mt-2 px-4">
                 {isSignedIn ? (
-                  <div className="flex items-center gap-3 px-2 py-2">
-                    <UserButton
-                      appearance={{
-                        elements: {
-                          avatarBox: "h-9 w-9",
-                          userButtonTrigger: "focus:shadow-none"
-                        }
-                      }}
-                      showName
-                    />
+                  <div className="flex items-center gap-3">
+                    <UserButton showName />
                   </div>
                 ) : (
                   <Button
-                    className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300"
+                    className="w-full rounded-full"
                     asChild
                   >
                     <Link href="/admin/register" onClick={() => setIsOpen(false)}>
-                      <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
                       시작하기
                     </Link>
                   </Button>

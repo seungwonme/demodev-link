@@ -8,6 +8,7 @@
     "start": "next start",
     "test": "vitest",
     "lint": "next lint",
+    "repomix": "bunx repomix",
     "gen:types": "pnpm dlx supabase gen types typescript --project-id 'lzwfzfvnijediorljtnk' > src/shared/types/database.types.ts",
     "db:push": "pnpm dlx supabase db push",
     "db:pull": "pnpm dlx supabase db pull --schema public",

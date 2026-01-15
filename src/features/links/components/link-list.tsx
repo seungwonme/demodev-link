@@ -19,35 +19,41 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/shared/components/ui/alert-dialog";
-import { Trash2, Copy, ExternalLink, BarChart3, Edit2, Calendar, Youtube, FolderPlus } from "lucide-react";
+import { Trash2, Copy, ExternalLink, BarChart3, Edit2, Youtube, FolderPlus } from "lucide-react";
 import { toast } from "sonner";
 import { isYouTubeUrl, getYouTubeVideoId } from "../utils/youtube";
 import { YouTubeEmbed } from "./youtube/youtube-embed";
 import { YouTubeThumbnail } from "./youtube/youtube-thumbnail";
 import { AddToCampaignDialog } from "@/features/campaigns/components/add-to-campaign-dialog";
+import {
+  DateRangeSelector,
+  DateRangePreset,
+  getDateRangeFromPreset,
+} from "@/shared/components/date-range-selector";
 
 interface LinkListProps {
   initialLinks: Link[];
 }
 
-type DateRangePreset = '7d' | '30d' | '3m' | '6m' | 'all' | 'custom';
-
 export default function LinkList({ initialLinks }: LinkListProps) {
   const [links, setLinks] = useState<(Link & { period_clicks?: number })[]>(initialLinks);
   const [showAll, setShowAll] = useState(false);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
-  const [baseUrl, setBaseUrl] = useState<string>("");
   const [editingLink, setEditingLink] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState<string>("");
-  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('all');
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("all");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
   const [expandedYouTube, setExpandedYouTube] = useState<string | null>(null);
   const [showAddToCampaign, setShowAddToCampaign] = useState(false);
   const [selectedLinkForCampaign, setSelectedLinkForCampaign] = useState<string | null>(null);
+  const [baseUrl, setBaseUrl] = useState(process.env.NEXT_PUBLIC_BASE_URL || "");
 
   useEffect(() => {
-    setBaseUrl(window.location.origin);
+    // 클라이언트 마운트 후 baseUrl 설정 (Hydration Mismatch 방지)
+    if (!process.env.NEXT_PUBLIC_BASE_URL && typeof window !== "undefined") {
+      setBaseUrl(window.location.origin);
+    }
   }, []);
 
   useEffect(() => {
@@ -56,44 +62,8 @@ export default function LinkList({ initialLinks }: LinkListProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRangePreset, customStartDate, customEndDate]);
 
-  const getDateRange = (): { startDate?: string; endDate?: string } | undefined => {
-    const now = new Date();
-    const endDate = now.toISOString();
-
-    switch (dateRangePreset) {
-      case '7d': {
-        const startDate = new Date(now);
-        startDate.setDate(startDate.getDate() - 7);
-        return { startDate: startDate.toISOString(), endDate };
-      }
-      case '30d': {
-        const startDate = new Date(now);
-        startDate.setDate(startDate.getDate() - 30);
-        return { startDate: startDate.toISOString(), endDate };
-      }
-      case '3m': {
-        const startDate = new Date(now);
-        startDate.setMonth(startDate.getMonth() - 3);
-        return { startDate: startDate.toISOString(), endDate };
-      }
-      case '6m': {
-        const startDate = new Date(now);
-        startDate.setMonth(startDate.getMonth() - 6);
-        return { startDate: startDate.toISOString(), endDate };
-      }
-      case 'custom': {
-        if (customStartDate && customEndDate) {
-          return {
-            startDate: new Date(customStartDate).toISOString(),
-            endDate: new Date(customEndDate).toISOString(),
-          };
-        }
-        return undefined;
-      }
-      case 'all':
-      default:
-        return undefined;
-    }
+  const getDateRange = () => {
+    return getDateRangeFromPreset(dateRangePreset, customStartDate, customEndDate);
   };
 
   const fetchLinks = async () => {
@@ -129,10 +99,10 @@ export default function LinkList({ initialLinks }: LinkListProps) {
     // ISO 표준 형식 사용 (hydration 오류 방지)
     return new Date(dateString).toISOString().split("T")[0];
   };
-  
+
   const handleDelete = async (linkId: string) => {
     const result = await deleteLink(linkId);
-    
+
     if (result.success) {
       setLinks(links.filter(link => link.id !== linkId));
       toast.success("링크가 삭제되었습니다.");
@@ -140,7 +110,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
       toast.error(result.error || "링크 삭제에 실패했습니다.");
     }
   };
-  
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -153,15 +123,15 @@ export default function LinkList({ initialLinks }: LinkListProps) {
   const handleUpdateDescription = async (linkId: string) => {
     try {
       const { error } = await updateLinkDescription(linkId, editDescription);
-      
+
       if (error) {
         toast.error("설명 업데이트에 실패했습니다.");
         return;
       }
-      
+
       // 성공적으로 업데이트되면 로컬 상태 업데이트
-      setLinks(links.map(link => 
-        link.id === linkId 
+      setLinks(links.map(link =>
+        link.id === linkId
           ? { ...link, description: editDescription }
           : link
       ));
@@ -183,102 +153,20 @@ export default function LinkList({ initialLinks }: LinkListProps) {
         </Button>
       </div>
 
-      {/* Date Range Selector */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Calendar className="h-4 w-4" />
-              날짜 범위 선택
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={dateRangePreset === '7d' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('7d')}
-              >
-                최근 7일
-              </Button>
-              <Button
-                variant={dateRangePreset === '30d' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('30d')}
-              >
-                최근 30일
-              </Button>
-              <Button
-                variant={dateRangePreset === '3m' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('3m')}
-              >
-                최근 3개월
-              </Button>
-              <Button
-                variant={dateRangePreset === '6m' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('6m')}
-              >
-                최근 6개월
-              </Button>
-              <Button
-                variant={dateRangePreset === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('all')}
-              >
-                전체 기간
-              </Button>
-              <Button
-                variant={dateRangePreset === 'custom' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateRangePreset('custom')}
-              >
-                사용자 정의
-              </Button>
-            </div>
-
-            {/* Custom Date Range Inputs */}
-            {dateRangePreset === 'custom' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">시작일</label>
-                  <input
-                    type="date"
-                    value={customStartDate}
-                    onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">종료일</label>
-                  <input
-                    type="date"
-                    value={customEndDate}
-                    onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Display Selected Range */}
-            <div className="text-xs text-muted-foreground">
-              {dateRangePreset === 'all' && '전체 데이터를 표시합니다'}
-              {dateRangePreset === '7d' && '최근 7일 데이터를 표시합니다'}
-              {dateRangePreset === '30d' && '최근 30일 데이터를 표시합니다'}
-              {dateRangePreset === '3m' && '최근 3개월 데이터를 표시합니다'}
-              {dateRangePreset === '6m' && '최근 6개월 데이터를 표시합니다'}
-              {dateRangePreset === 'custom' && customStartDate && customEndDate &&
-                `${customStartDate} ~ ${customEndDate} 데이터를 표시합니다`}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <DateRangeSelector
+        preset={dateRangePreset}
+        onPresetChange={setDateRangePreset}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomStartDateChange={setCustomStartDate}
+        onCustomEndDateChange={setCustomEndDate}
+      />
 
       <div className="grid gap-4">
         {links.map((link) => (
           <Card
             key={link.id}
-            className="hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="border-none hover:bg-muted/50 dark:hover:bg-white/5 shadow-sm transition-all"
           >
             <CardContent className="p-4">
               <div className="flex justify-between items-start">
@@ -307,7 +195,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
                         type="text"
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
-                        className="flex-1 px-2 py-1 text-sm border rounded"
+                        className="flex-1 px-2 py-1 text-sm border border-border rounded bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                         placeholder="설명을 입력하세요"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
@@ -334,7 +222,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
                   ) : (
                     <div className="flex items-center gap-2">
                       {link.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           {link.description}
                         </p>
                       )}
@@ -351,7 +239,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-2">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       {baseUrl}/{link.slug}
                     </p>
                     <Button
@@ -383,7 +271,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
                       </p>
                     </>
                   )}
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {formatDate(link.created_at || "")}
                   </p>
                   <div className="flex gap-2 mt-2 justify-end">

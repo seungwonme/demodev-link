@@ -57,7 +57,7 @@ export function CampaignList({ initialCampaigns }: CampaignListProps) {
 
   if (campaigns.length === 0) {
     return (
-      <Card>
+      <Card className="border-none shadow-sm bg-white/50 dark:bg-white/5">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <p className="text-muted-foreground mb-4">
             아직 생성된 캠페인이 없습니다.
@@ -78,7 +78,7 @@ export function CampaignList({ initialCampaigns }: CampaignListProps) {
       {campaigns.map((campaign) => (
         <Card
           key={campaign.id}
-          className="hover:bg-gray-50 dark:hover:bg-gray-800"
+          className="border-black/5 dark:border-white/5 hover:bg-muted/50 dark:hover:bg-white/5 shadow-sm transition-all"
         >
           <CardContent className="p-4">
             <div className="flex justify-between items-start">

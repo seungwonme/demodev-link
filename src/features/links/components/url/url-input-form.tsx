@@ -16,6 +16,7 @@ import { useUser } from "@clerk/nextjs";
 import { UTMBuilder } from "@/features/links/components/utm/utm-builder";
 import { UTMParameters, addUTMParameters, isUTMParametersEmpty } from "@/features/links/types/utm";
 import { TemplateSelector } from "@/features/templates/components/template-selector";
+import { getBaseUrl } from "@/lib/url";
 
 export default function UrlInputForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -162,9 +163,9 @@ export default function UrlInputForm() {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-0 shadow-2xl glass-effect">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-        <CardContent className="relative p-8">
+      <Card className="overflow-hidden border-none shadow-none bg-transparent">
+        <div className="absolute inset-0 bg-transparent" />
+        <CardContent className="relative p-0">
           <form action={handleSubmit} className="space-y-6">
             {/* Template Selector */}
             <div className="space-y-3">
@@ -195,7 +196,7 @@ export default function UrlInputForm() {
                   placeholder="https://example.com/very-long-url"
                   aria-describedby={error ? "url-error" : undefined}
                   disabled={isLoading}
-                  className="pl-10 pr-10 h-12 text-base transition-all focus:scale-[1.02]"
+                  className="pl-10 pr-10 h-12 text-base transition-all focus:scale-[1.02] border-black/5 dark:border-white/10 bg-white/50 dark:bg-black/20 shadow-sm"
                   required
                 />
                 {inputValue && (
@@ -226,7 +227,7 @@ export default function UrlInputForm() {
                 disabled={isLoading}
                 rows={3}
                 maxLength={500}
-                className="resize-none transition-all focus:scale-[1.01]"
+                className="resize-none transition-all focus:scale-[1.01] border-black/5 dark:border-white/10 bg-white/50 dark:bg-black/20 shadow-sm"
               />
               <p className="text-xs text-muted-foreground">
                 나중에 링크를 쉽게 찾고 관리할 수 있도록 설명을 추가해보세요.
@@ -243,7 +244,7 @@ export default function UrlInputForm() {
             </div>
 
             {/* Custom Slug Toggle */}
-            <div className="p-4 rounded-lg bg-muted/30 space-y-4">
+            <div className="p-4 rounded-lg bg-muted/10 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
@@ -266,8 +267,8 @@ export default function UrlInputForm() {
 
               {showCustomSlug && (
                 <div className="space-y-3 animate-in slide-in-from-top-2">
-                  <div className="flex items-center space-x-2 p-3 rounded-md bg-background/50">
-                    <span className="text-sm font-medium text-muted-foreground">{window.location.origin}/</span>
+                  <div className="flex items-center space-x-2 p-3 rounded-md bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10">
+                    <span className="text-sm font-medium text-muted-foreground">{getBaseUrl()}/</span>
                     <Input
                       id="slug-input"
                       type="text"

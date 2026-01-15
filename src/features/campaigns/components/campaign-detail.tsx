@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -43,13 +43,14 @@ export function CampaignDetail({ campaign: initialCampaign }: CampaignDetailProp
   const [campaign, setCampaign] = useState(initialCampaign);
   const [expandedYouTube, setExpandedYouTube] = useState<string | null>(null);
   const [showLinkSelector, setShowLinkSelector] = useState(false);
-  const [baseUrl, setBaseUrl] = useState<string>("");
+  const [baseUrl, setBaseUrl] = useState(process.env.NEXT_PUBLIC_BASE_URL || "");
 
-  useState(() => {
-    if (typeof window !== "undefined") {
+  useEffect(() => {
+    // 클라이언트 마운트 후 baseUrl 설정 (Hydration Mismatch 방지)
+    if (!process.env.NEXT_PUBLIC_BASE_URL && typeof window !== "undefined") {
       setBaseUrl(window.location.origin);
     }
-  });
+  }, []);
 
   const handleRemoveLink = async (linkId: string) => {
     const result = await removeLinkFromCampaign(campaign.id, linkId);
@@ -69,6 +70,14 @@ export function CampaignDetail({ campaign: initialCampaign }: CampaignDetailProp
     setCampaign({
       ...campaign,
       links: [link, ...campaign.links],
+    });
+    setShowLinkSelector(false);
+  };
+
+  const handleLinksAdded = (links: LinkType[]) => {
+    setCampaign({
+      ...campaign,
+      links: [...links, ...campaign.links],
     });
     setShowLinkSelector(false);
   };
@@ -233,7 +242,7 @@ export function CampaignDetail({ campaign: initialCampaign }: CampaignDetailProp
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {baseUrl}/{link.slug}
                         </p>
                         <Button
@@ -315,6 +324,7 @@ export function CampaignDetail({ campaign: initialCampaign }: CampaignDetailProp
           campaign={campaign}
           onClose={() => setShowLinkSelector(false)}
           onLinkAdded={handleLinkAdded}
+          onLinksAdded={handleLinksAdded}
         />
       )}
     </div>

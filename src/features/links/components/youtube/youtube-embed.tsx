@@ -77,7 +77,7 @@ export function YouTubeEmbed({
       <Button
         variant="ghost"
         size="icon"
-        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-gray-800 text-white hover:bg-gray-700 hover:text-white"
+        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-muted-foreground/80 text-background hover:bg-muted-foreground hover:text-background"
         onClick={() => setIsPlaying(false)}
       >
         <X className="h-4 w-4" />

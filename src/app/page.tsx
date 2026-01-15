@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/shared/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/shared/components/ui/card";
-import {
   Link2,
   BarChart3,
   ShieldCheck,
@@ -14,91 +8,93 @@ import {
   Users,
   Settings,
   ArrowRight,
-  Sparkles,
   Globe,
+  CheckCircle2,
 } from "lucide-react";
-import Threads from "@/shared/components/ui/backgrounds/threads";
+import Iridescence from "@/components/Iridescence";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-primary/10 selection:text-primary">
       {/* Hero Section */}
-      <section className="relative min-h-[80vh] overflow-hidden flex items-center">
-        <div className="absolute inset-0 z-0">
-          <Threads 
-            color={[0.4, 0.2, 0.9]} 
-            amplitude={0.6} 
-            distance={0.2}
-            enableMouseInteraction={true}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 pb-32">
+        {/* Ambient Glow */}
+        <div className="glow-bg" />
+
+        <div className="absolute inset-0 z-0 opacity-40">
+          <Iridescence
+            color={[0.18, 0.42, 1.0]} /* Matching Brand Blue #2E6CFF */
+            mouseReact={true}
+            amplitude={0.05}
+            speed={0.8}
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/80 z-[1]" />
-        <div className="container relative mx-auto px-4 py-32 sm:px-6 lg:px-8 z-10">
-          <div className="text-center animate-in">
-            <div className="inline-flex items-center gap-2 px-6 py-3 mb-10 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 backdrop-blur-sm border border-primary/20 text-sm font-semibold text-primary">
-              <Sparkles className="h-4 w-4" />
-              <span>차세대 URL 관리 플랫폼</span>
+
+        {/* Textured Overlay */}
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 z-[1] mix-blend-soft-light" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/60 to-background/90 z-[2]" />
+
+        <div className="container relative mx-auto px-4 z-10">
+          <div className="max-w-4xl mx-auto text-center animate-in space-y-10">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 text-xs font-semibold text-primary backdrop-blur-md shadow-sm cursor-default hover:bg-white/80 transition-colors">
+              <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+              <span>v2.0 Now Available</span>
             </div>
 
-            <h1 className="text-5xl font-black tracking-tight sm:text-6xl md:text-7xl lg:text-8xl mb-6">
-              <span className="block bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient-x bg-300% leading-tight">DemoDev</span>
-              <span className="block text-6xl sm:text-7xl md:text-8xl font-black mt-2 text-foreground/90">Link</span>
-            </h1>
-            <div className="h-1 w-32 mx-auto bg-gradient-to-r from-transparent via-primary to-transparent mb-8" />
+            {/* Main Title */}
+            <div className="space-y-6">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[1.0] text-foreground drop-shadow-sm">
+                DemoDev
+                <span className="text-primary relative inline-block">
+                  Link
+                  <svg className="absolute w-full h-3 -bottom-1 left-0 text-primary/20 -z-10" viewBox="0 0 100 10" preserveAspectRatio="none">
+                    <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" />
+                  </svg>
+                </span>
+              </h1>
+              <p className="mx-auto max-w-xl text-lg sm:text-xl text-muted-foreground font-normal leading-relaxed tracking-tight">
+                단순한 링크 단축 그 이상.<br className="hidden sm:block" />
+                <strong className="text-foreground font-semibold">데이터 기반</strong>의 강력한 링크 관리 플랫폼을 경험하세요.
+              </p>
+            </div>
 
-            <p className="mx-auto max-w-2xl text-xl sm:text-2xl text-foreground/80 font-light leading-relaxed tracking-wide">
-              <span className="font-semibold text-primary">혁신적인</span> URL 단축 서비스로 
-              <span className="font-semibold text-accent">안전하고 효율적인</span> 링크 관리를 경험하세요
-            </p>
-            <p className="mx-auto mt-4 max-w-xl text-base sm:text-lg text-muted-foreground">
-              실시간 분석 · 팀 협업 · 엔터프라이즈 보안
-            </p>
-
-            <div className="mx-auto mt-16 flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <Link href="/shorten">
+            {/* CTA Buttons - Metallic/3D Feel */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
+              <Link href="/shorten" className="w-full sm:w-auto">
                 <Button
                   size="lg"
-                  className="group relative min-w-[240px] h-16 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-105"
+                  className="rounded-full w-full sm:w-auto h-12 px-8 text-base font-bold bg-primary hover:bg-primary/90 text-white shadow-[0_4px_14px_0_rgba(46,108,255,0.39)] hover:shadow-[0_6px_20px_rgba(46,108,255,0.23)] hover:-translate-y-[1px] transition-all"
                 >
-                  <span className="absolute inset-0 rounded-md bg-white/20 blur-xl group-hover:bg-white/30 transition-all" />
-                  <span className="relative flex items-center">
-                    시작하기
-                    <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-2" />
-                  </span>
+                  무료로 시작하기
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/admin">
+              <Link href="/admin" className="w-full sm:w-auto">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="min-w-[240px] h-16 text-lg font-semibold border-2 border-primary/30 bg-background/60 backdrop-blur-xl hover:bg-primary/5 hover:border-primary/50 transition-all duration-300"
+                  className="rounded-full w-full sm:w-auto h-12 px-8 text-base font-semibold bg-white/50 border-white/60 hover:bg-white/80 text-foreground shadow-sm hover:shadow transition-all backdrop-blur-sm"
                 >
-                  <Globe className="mr-3 h-5 w-5 text-primary" />
-                  대시보드 둘러보기
+                  <Globe className="mr-2 h-4 w-4 text-muted-foreground" />
+                  대시보드 데모
                 </Button>
               </Link>
             </div>
 
-            {/* Stats */}
-            <div className="mt-24 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
-              <div className="group text-center p-6 rounded-2xl bg-gradient-to-br from-background/60 to-background/40 backdrop-blur-md border border-primary/10 hover:border-primary/30 transition-all duration-300">
-                <div className="text-5xl font-black bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">99.9%</div>
-                <div className="mt-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                  가동 시간
+            {/* Stats - Metallic Cards */}
+            <div className="pt-24 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+              {[
+                { label: "가동 시간", value: "99.99%" },
+                { label: "링크 생성", value: "10M+" },
+                { label: "응답 속도", value: "< 10ms" },
+                { label: "보안 수준", value: "Enterprise" },
+              ].map((stat, i) => (
+                <div key={i} className="metallic-surface rounded-2xl p-5 text-center group transition-all hover:-translate-y-1">
+                  <div className="text-2xl sm:text-3xl font-black text-foreground mb-1 tracking-tight group-hover:text-primary transition-colors">{stat.value}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground font-medium uppercase tracking-wide">{stat.label}</div>
                 </div>
-              </div>
-              <div className="group text-center p-6 rounded-2xl bg-gradient-to-br from-background/60 to-background/40 backdrop-blur-md border border-accent/10 hover:border-accent/30 transition-all duration-300">
-                <div className="text-5xl font-black bg-gradient-to-br from-accent to-primary bg-clip-text text-transparent">10ms</div>
-                <div className="mt-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                  응답 시간
-                </div>
-              </div>
-              <div className="group text-center p-6 rounded-2xl bg-gradient-to-br from-background/60 to-background/40 backdrop-blur-md border border-primary/10 hover:border-primary/30 transition-all duration-300">
-                <div className="text-5xl font-black bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">256bit</div>
-                <div className="mt-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                  암호화
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -106,165 +102,92 @@ export default function LandingPage() {
 
       {/* Features Section */}
       <section className="py-32 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background" />
+        {/* Subtle background surface */}
+        <div className="absolute inset-0 bg-secondary/30 -skew-y-3 transform origin-top-left scale-110 z-0" />
 
-        <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl sm:text-5xl font-bold gradient-text mb-6">
-              강력한 기능으로 무장한 플랫폼
+        <div className="container px-4 mx-auto relative z-10">
+          <div className="text-center mb-20 max-w-2xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight text-foreground">
+              압도적인 <span className="text-primary">퍼포먼스</span>
             </h2>
-            <p className="mt-4 text-xl text-muted-foreground max-w-3xl mx-auto">
-              기업의 URL 관리를 혁신하는 엔터프라이즈급 기능들을 만나보세요
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              가볍지만 강력합니다. <br />
+              비즈니스에 필요한 모든 기능을 직관적인 인터페이스에 담았습니다.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Feature 1 */}
-            <Card className="group hover-lift border-border/50 glass-effect overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="relative">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
-                  <Link2 className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="mt-6 text-xl">스마트 URL 단축</CardTitle>
-              </CardHeader>
-              <CardContent className="relative">
-                <p className="text-muted-foreground leading-relaxed">
-                  AI 기반 커스텀 슬러그 추천과 함께 브랜드에 맞는 짧고 의미있는
-                  링크를 생성하세요.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 2 */}
-            <Card className="group hover-lift border-border/50 glass-effect overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="relative">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
-                  <BarChart3 className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="mt-6 text-xl">
-                  실시간 분석 대시보드
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative">
-                <p className="text-muted-foreground leading-relaxed">
-                  방문자 흐름, 지역별 통계, 디바이스 분석 등 상세한 인사이트를
-                  실시간으로 모니터링하세요.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 3 */}
-            <Card className="group hover-lift border-border/50 glass-effect overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="relative">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
-                  <ShieldCheck className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="mt-6 text-xl">
-                  엔터프라이즈 보안
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative">
-                <p className="text-muted-foreground leading-relaxed">
-                  2FA, IP 화이트리스트, 역할 기반 접근 제어로 최고 수준의 보안을
-                  보장합니다.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 4 */}
-            <Card className="group hover-lift border-border/50 glass-effect overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="relative">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
-                  <Zap className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="mt-6 text-xl">
-                  초고속 리다이렉션
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative">
-                <p className="text-muted-foreground leading-relaxed">
-                  글로벌 CDN과 엣지 컴퓨팅으로 10ms 이내의 초저지연 리다이렉션을
-                  실현합니다.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 5 */}
-            <Card className="group hover-lift border-border/50 glass-effect overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="relative">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
-                  <Users className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="mt-6 text-xl">스마트 팀 협업</CardTitle>
-              </CardHeader>
-              <CardContent className="relative">
-                <p className="text-muted-foreground leading-relaxed">
-                  팀별 워크스페이스, 실시간 동기화, 권한 관리로 효율적인 협업
-                  환경을 구축하세요.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 6 */}
-            <Card className="group hover-lift border-border/50 glass-effect overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="relative">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
-                  <Settings className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="mt-6 text-xl">강력한 관리 도구</CardTitle>
-              </CardHeader>
-              <CardContent className="relative">
-                <p className="text-muted-foreground leading-relaxed">
-                  직관적인 관리자 대시보드로 사용자, 링크, 분석 데이터를 한눈에
-                  관리하세요.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            <FeatureCard
+              icon={<Link2 className="w-5 h-5" />}
+              title="스마트 URL 단축"
+              description="브랜드 아이덴티티를 담은 커스텀 도메인과 슬러그를 제공합니다."
+            />
+            <FeatureCard
+              icon={<BarChart3 className="w-5 h-5" />}
+              title="심층 분석 데이터"
+              description="실시간 클릭, 유입 경로, 지역, 디바이스 등 상세 데이터를 시각화합니다."
+            />
+            <FeatureCard
+              icon={<ShieldCheck className="w-5 h-5" />}
+              title="엔터프라이즈 보안"
+              description="SSL 암호화, 비밀번호 보호, 만료일 설정으로 안전하게 공유하세요."
+            />
+            <FeatureCard
+              icon={<Zap className="w-5 h-5" />}
+              title="Global Edge"
+              description="전 세계 엣지 네트워크를 통해 딜레이 없는 빠른 접속을 보장합니다."
+            />
+            <FeatureCard
+              icon={<Users className="w-5 h-5" />}
+              title="팀 워크스페이스"
+              description="프로젝트별로 링크를 관리하고 팀원들과 효율적으로 협업하세요."
+            />
+            <FeatureCard
+              icon={<Settings className="w-5 h-5" />}
+              title="API & Webhooks"
+              description="강력한 API로 기존 워크플로우에 단축 기능을 통합하세요."
+            />
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="relative py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary opacity-90" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.2),transparent_50%)]" />
+      <section className="py-32 px-4">
+        <div className="container mx-auto max-w-5xl">
+          <div className="metallic-surface rounded-[2.5rem] p-12 md:p-20 text-center relative overflow-hidden">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
 
-        <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-4xl mx-auto">
-            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-              팀의 URL 관리를 혁신할 준비가 되셨나요?
-            </h2>
-            <p className="text-xl text-white/90 mb-12 leading-relaxed">
-              지금 시작하면 30일간 모든 프리미엄 기능을 무료로 체험할 수
-              있습니다. 신용카드 등록 없이 바로 시작하세요.
-            </p>
+            <div className="relative z-10">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight">
+                지금 바로 시작하세요
+              </h2>
+              <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto">
+                신용카드 없이 14일 무료 체험이 가능합니다. <br />
+                수천 개의 기업이 선택한 링크 관리 솔루션.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <Link href="/shorten">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="group min-w-[200px] h-14 text-lg font-medium bg-white text-primary hover:bg-white/90"
-                >
-                  무료 체험 시작하기
-                  <Sparkles className="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
-                </Button>
-              </Link>
-              <div className="flex items-center gap-4 text-white/80">
-                <span className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5" />
-                  <span>SSL 보안</span>
-                </span>
-                <span className="flex items-center gap-2">
-                  <Zap className="h-5 w-5" />
-                  <span>즉시 활성화</span>
-                </span>
+              <div className="flex justify-center gap-4 mb-12">
+                <Link href="/shorten">
+                  <Button size="lg" className="rounded-full h-14 px-10 text-base font-bold bg-foreground text-background hover:bg-foreground/90 shadow-xl hover:scale-105 transition-all">
+                    무료로 시작하기
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-8 text-sm font-medium text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                  <span>14일 무료 체험</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                  <span>카드 등록 불필요</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                  <span>언제든 해지 가능</span>
+                </div>
               </div>
             </div>
           </div>
@@ -272,128 +195,61 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-muted/30">
-        <div className="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            <div className="md:col-span-2">
-              <h3 className="text-2xl font-bold gradient-text mb-4">
-                DemoDev Link
-              </h3>
-              <p className="text-muted-foreground mb-6 max-w-md">
-                엔터프라이즈급 URL 관리 플랫폼으로 팀의 생산성을 높이고 브랜드
-                가치를 보호하세요.
-              </p>
-              <div className="flex gap-4">
-                <Link href="/shorten">
-                  <Button variant="outline" size="sm" className="glass-effect">
-                    시작하기
-                  </Button>
-                </Link>
-                <Link href="/admin/login">
-                  <Button variant="ghost" size="sm">
-                    로그인
-                  </Button>
-                </Link>
+      <footer className="py-12 border-t border-border bg-background/50">
+        <div className="container px-4 mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+            <div className="col-span-2 md:col-span-1">
+              <div className="font-bold text-lg mb-4 tracking-tight">
+                DemoLink
               </div>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+                데이터 기반의 의사결정을 돕는 <br />
+                프리미엄 링크 관리 플랫폼
+              </p>
             </div>
-
             <div>
-              <h4 className="font-semibold mb-4">제품</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    기능
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    가격
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    보안
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    API
-                  </Link>
-                </li>
+              <h4 className="font-semibold mb-4 text-sm text-foreground">Product</h4>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li className="hover:text-primary transition-colors cursor-pointer">Features</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">Pricing</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">API</li>
               </ul>
             </div>
-
             <div>
-              <h4 className="font-semibold mb-4">회사</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    소개
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    블로그
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    채용
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    문의
-                  </Link>
-                </li>
+              <h4 className="font-semibold mb-4 text-sm text-foreground">Company</h4>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li className="hover:text-primary transition-colors cursor-pointer">About</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">Blog</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">Careers</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4 text-sm text-foreground">Legal</h4>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li className="hover:text-primary transition-colors cursor-pointer">Privacy</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">Terms</li>
               </ul>
             </div>
           </div>
-
-          <div className="pt-8 border-t border-border/50">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-muted-foreground">
-                &copy; 2024 DemoDev. All rights reserved.
-              </p>
-              <div className="flex gap-6 text-sm text-muted-foreground">
-                <Link href="#" className="hover:text-primary transition-colors">
-                  개인정보처리방침
-                </Link>
-                <Link href="#" className="hover:text-primary transition-colors">
-                  이용약관
-                </Link>
-                <Link href="#" className="hover:text-primary transition-colors">
-                  쿠키 정책
-                </Link>
-              </div>
-            </div>
+          <div className="pt-8 text-center text-xs text-muted-foreground border-t border-border/50">
+            &copy; 2024 DemoDev Link. All rights reserved.
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
+  return (
+    <div className="group p-6 rounded-2xl metallic-surface transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-none dark:hover:bg-accent/10">
+      <div className="w-10 h-10 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary mb-5 group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+        {icon}
+      </div>
+      <h3 className="text-lg font-bold mb-3 tracking-tight text-foreground">{title}</h3>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {description}
+      </p>
     </div>
   );
 }

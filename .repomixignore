@@ -1,0 +1,69 @@
+# Build & Cache
+node_modules/
+.next/
+.git/
+tsconfig.tsbuildinfo
+
+# Environment & Secrets
+.env
+.env.*
+.env.local
+.env.production
+.env.example
+
+# IDE & Editor
+.cursor/
+.claude/
+.DS_Store
+.vscode/
+
+# Documentation & Prompts
+prompts/
+docs/
+README.md
+AGENTS.md
+CLAUDE.md
+*.md
+
+# Repomix output
+repomix-output.xml
+repomix-output.*
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Logs & Patches
+*.log
+*.patch
+commit.log
+changes.patch
+supabase.log
+
+# GitHub & CI
+.github/
+
+# Supabase migrations (if not needed)
+supabase/
+
+# Static assets
+public/
+
+# Test files (uncomment if needed)
+# test/
+# **/*.test.ts
+# **/*.test.tsx
+# **/*.spec.ts
+# **/*.spec.tsx
+# vitest.config.mts
+
+# Scripts (migration scripts etc.)
+scripts/
+
+# Config files that are not essential
+.cursorignore
+.node-version
+.mcp.json
+vercel.json
+pnpm-workspace.yaml
