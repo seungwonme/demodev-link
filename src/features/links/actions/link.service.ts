@@ -479,7 +479,7 @@ export class LinkService {
       const supabase = await this.getSupabaseClient(supabaseClient);
       const { data, error } = await supabase
         .from(this.CLICK_TABLE)
-        .select("clicked_at")
+        .select("clicked_at, ip_address")
         .eq("link_id", linkId)
         .order("clicked_at", { ascending: true });
 
@@ -488,19 +488,26 @@ export class LinkService {
         throw new Error("클릭 통계 조회 중 오류가 발생했습니다.");
       }
 
-      // 클릭 데이터를 일별로 집계
+      // 클릭 데이터를 일별로 집계 (클릭 수 및 고유 방문자)
       const dailyStats = data.reduce(
-        (acc: { [key: string]: number }, click) => {
+        (acc: { [key: string]: { clicks: number; uniqueIps: Set<string> } }, click) => {
           const date = new Date(click.clicked_at).toISOString().split("T")[0];
-          acc[date] = (acc[date] || 0) + 1;
+          if (!acc[date]) {
+            acc[date] = { clicks: 0, uniqueIps: new Set() };
+          }
+          acc[date].clicks += 1;
+          if (click.ip_address) {
+            acc[date].uniqueIps.add(click.ip_address);
+          }
           return acc;
         },
         {},
       );
 
-      return Object.entries(dailyStats).map(([date, clicks]) => ({
+      return Object.entries(dailyStats).map(([date, stats]) => ({
         date,
-        clicks,
+        clicks: stats.clicks,
+        uniqueVisitors: stats.uniqueIps.size,
       }));
     } catch (error) {
       console.error(`Error in getLinkClickStats for link ${linkId}:`, error);
