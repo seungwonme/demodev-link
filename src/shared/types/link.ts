@@ -33,4 +33,5 @@ export interface LinkResponse {
 export interface DailyClickStats {
   date: string;
   clicks: number;
+  uniqueVisitors: number;
 }

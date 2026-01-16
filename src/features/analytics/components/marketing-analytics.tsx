@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { getMarketingAnalytics, getAllLinksForAnalytics } from "@/features/analytics/actions/get-analytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { Input } from "@/shared/components/ui/input";
 import { Progress } from "@/shared/components/ui/progress";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -19,7 +19,10 @@ import {
   Monitor,
   Tablet,
   Calendar,
-  ArrowRight
+  ArrowRight,
+  Search,
+  X,
+  Link2
 } from "lucide-react";
 import { Line, Doughnut } from "react-chartjs-2";
 import {
@@ -86,6 +89,9 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const getDateRange = (): { startDate?: string; endDate?: string } | undefined => {
     const now = new Date();
@@ -125,6 +131,37 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
       default:
         return undefined;
     }
+  };
+
+  // 검색 필터링된 링크
+  const filteredLinks = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return links;
+    }
+    const query = searchQuery.toLowerCase();
+    return links.filter(
+      (link) =>
+        link.slug.toLowerCase().includes(query) ||
+        link.original_url.toLowerCase().includes(query) ||
+        (link.description && link.description.toLowerCase().includes(query))
+    );
+  }, [links, searchQuery]);
+
+  // 외부 클릭 시 검색 결과 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectLink = (linkId: string) => {
+    setSelectedLinkId(linkId);
+    setIsSearchFocused(false);
+    setSearchQuery('');
   };
 
   const fetchLinks = async () => {
@@ -169,35 +206,22 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLinkId, dateRangePreset, customStartDate, customEndDate]);
 
-  if (!selectedLinkId || loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 gap-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-        <p className="text-muted-foreground animate-pulse">데이터를 분석하고 있습니다...</p>
-      </div>
-    );
-  }
-
-  if (!analytics) {
-    return null;
-  }
-
-  const hourlyChartData = {
+  const hourlyChartData = analytics ? {
     labels: analytics.clicksByHour.map((h) => `${h.hour}시`),
     datasets: [
       {
         label: "시간대별 클릭 수",
         data: analytics.clicksByHour.map((h) => h.clicks),
-        backgroundColor: "rgba(46, 108, 255, 0.1)", // Primary color with opacity
-        borderColor: "#2E6CFF", // Primary color
+        backgroundColor: "rgba(46, 108, 255, 0.1)",
+        borderColor: "#2E6CFF",
         borderWidth: 2,
         tension: 0.4,
         fill: true,
       },
     ],
-  };
+  } : null;
 
-  const deviceChartData = {
+  const deviceChartData = analytics ? {
     labels: analytics.clicksByDevice.map((d) =>
       d.device === "Desktop" ? "데스크톱" :
         d.device === "Mobile" ? "모바일" :
@@ -207,16 +231,16 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
       {
         data: analytics.clicksByDevice.map((d) => d.clicks),
         backgroundColor: [
-          "#2E6CFF", // Primary
-          "#10B981", // Emerald
-          "#F59E0B", // Amber
-          "#8B5CF6", // Violet
+          "#2E6CFF",
+          "#10B981",
+          "#F59E0B",
+          "#8B5CF6",
         ],
         borderWidth: 0,
         hoverOffset: 4,
       },
     ],
-  };
+  } : null;
 
   const chartOptions: ChartOptions<"line"> = {
     responsive: true,
@@ -297,34 +321,108 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Link Selector */}
+      {/* Link Search & Selector - 항상 표시 */}
       {!propLinkId && (
-        <div className="mb-8">
-          <Select value={selectedLinkId} onValueChange={setSelectedLinkId}>
-            <SelectTrigger className="w-full max-w-md h-12 bg-white dark:bg-white/5 border-black/5 dark:border-white/10 shadow-sm rounded-xl">
-              <SelectValue placeholder="분석할 링크를 선택하세요" />
-            </SelectTrigger>
-            <SelectContent>
-              {links.map((link) => (
-                <SelectItem key={link.id} value={link.id}>
-                  <div className="flex flex-col py-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-foreground">{link.description || '제목 없음'}</span>
-                      {link.slug && <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">/{link.slug}</span>}
-                    </div>
-                    <span className="text-xs text-muted-foreground mt-0.5 truncate max-w-[300px]">
-                      {link.original_url}
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div ref={searchContainerRef} className="relative z-50">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+              <Link2 className="h-5 w-5" />
+            </div>
+            <h3 className="text-lg font-bold">링크 선택</h3>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="slug, URL, 설명으로 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              className="pl-10 pr-10 h-12 bg-white dark:bg-white/5 border-black/10 dark:border-white/10"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          {/* Search Results Dropdown */}
+          {isSearchFocused && (
+            <div className="absolute z-[9999] w-full mt-2 max-h-80 overflow-y-auto bg-white dark:bg-zinc-900 rounded-xl border border-black/10 dark:border-white/10 shadow-2xl">
+              {filteredLinks.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  검색 결과가 없습니다.
+                </div>
+              ) : (
+                <div className="py-2">
+                  <p className="px-3 py-1 text-xs text-muted-foreground">
+                    {searchQuery ? `검색 결과: ${filteredLinks.length}개` : `전체: ${links.length}개`}
+                  </p>
+                  {filteredLinks.map((link) => (
+                    <button
+                      key={link.id}
+                      onClick={() => handleSelectLink(link.id)}
+                      className={cn(
+                        "w-full px-3 py-3 text-left hover:bg-muted/50 transition-colors border-b border-black/5 dark:border-white/5 last:border-b-0",
+                        selectedLinkId === link.id && "bg-primary/5"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground truncate">
+                              {link.description || '제목 없음'}
+                            </span>
+                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex-shrink-0">
+                              /{link.slug}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1 truncate">
+                            {link.original_url}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-4">
+                          <p className="text-sm font-semibold text-primary">
+                            {link.period_clicks ?? link.click_count}
+                          </p>
+                          <p className="text-xs text-muted-foreground">클릭</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Date Range Selector */}
-      <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
+      {/* 로딩 상태 */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center h-96 gap-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground animate-pulse">데이터를 분석하고 있습니다...</p>
+        </div>
+      )}
+
+      {/* 링크 미선택 상태 */}
+      {!selectedLinkId && !loading && (
+        <div className="flex flex-col items-center justify-center h-64 gap-4 text-muted-foreground">
+          <Search className="h-12 w-12 opacity-50" />
+          <p>분석할 링크를 검색하여 선택하세요.</p>
+        </div>
+      )}
+
+      {/* 분석 데이터 - 로딩 완료 후 표시 */}
+      {!loading && analytics && (
+        <>
+          {/* Date Range Selector */}
+          <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-white dark:bg-white/5 backdrop-blur-xl">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg font-bold">
             <div className="p-2 rounded-lg bg-primary/10 text-primary">
@@ -633,6 +731,8 @@ export default function MarketingAnalytics({ linkId: propLinkId }: MarketingAnal
           </p>
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "@/shared/types/link";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import { deleteLink } from "@/features/links/actions/delete-link";
 import { updateLinkDescription } from "@/features/links/actions/update-link";
 import { getAllLinksForAnalytics } from "@/features/analytics/actions/get-analytics";
@@ -19,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/shared/components/ui/alert-dialog";
-import { Trash2, Copy, ExternalLink, BarChart3, Edit2, Youtube, FolderPlus } from "lucide-react";
+import { Trash2, Copy, ExternalLink, BarChart3, Edit2, Youtube, FolderPlus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { isYouTubeUrl, getYouTubeVideoId } from "../utils/youtube";
 import { YouTubeEmbed } from "./youtube/youtube-embed";
@@ -36,8 +37,7 @@ interface LinkListProps {
 }
 
 export default function LinkList({ initialLinks }: LinkListProps) {
-  const [links, setLinks] = useState<(Link & { period_clicks?: number })[]>(initialLinks);
-  const [showAll, setShowAll] = useState(false);
+  const [allLinks, setAllLinks] = useState<(Link & { period_clicks?: number })[]>(initialLinks);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [editingLink, setEditingLink] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState<string>("");
@@ -48,6 +48,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
   const [showAddToCampaign, setShowAddToCampaign] = useState(false);
   const [selectedLinkForCampaign, setSelectedLinkForCampaign] = useState<string | null>(null);
   const [baseUrl, setBaseUrl] = useState(process.env.NEXT_PUBLIC_BASE_URL || "");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
     // 클라이언트 마운트 후 baseUrl 설정 (Hydration Mismatch 방지)
@@ -70,30 +71,23 @@ export default function LinkList({ initialLinks }: LinkListProps) {
     const dateRange = getDateRange();
     const result = await getAllLinksForAnalytics(dateRange);
     if (result.success && result.data) {
-      if (showAll) {
-        setLinks(result.data);
-      } else {
-        setLinks(result.data.slice(0, 10));
-      }
+      setAllLinks(result.data);
     }
   };
 
-  const handleShowAll = async () => {
-    if (!showAll) {
-      const dateRange = getDateRange();
-      const result = await getAllLinksForAnalytics(dateRange);
-      if (result.success && result.data) {
-        setLinks(result.data);
-      }
-    } else {
-      const dateRange = getDateRange();
-      const result = await getAllLinksForAnalytics(dateRange);
-      if (result.success && result.data) {
-        setLinks(result.data.slice(0, 10));
-      }
+  // 검색 필터링된 링크
+  const filteredLinks = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return allLinks;
     }
-    setShowAll(!showAll);
-  };
+    const query = searchQuery.toLowerCase();
+    return allLinks.filter(
+      (link) =>
+        link.slug.toLowerCase().includes(query) ||
+        link.original_url.toLowerCase().includes(query) ||
+        (link.description && link.description.toLowerCase().includes(query))
+    );
+  }, [allLinks, searchQuery]);
 
   const formatDate = (dateString: string) => {
     // ISO 표준 형식 사용 (hydration 오류 방지)
@@ -104,7 +98,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
     const result = await deleteLink(linkId);
 
     if (result.success) {
-      setLinks(links.filter(link => link.id !== linkId));
+      setAllLinks(allLinks.filter(link => link.id !== linkId));
       toast.success("링크가 삭제되었습니다.");
     } else {
       toast.error(result.error || "링크 삭제에 실패했습니다.");
@@ -130,7 +124,7 @@ export default function LinkList({ initialLinks }: LinkListProps) {
       }
 
       // 성공적으로 업데이트되면 로컬 상태 업데이트
-      setLinks(links.map(link =>
+      setAllLinks(allLinks.map(link =>
         link.id === linkId
           ? { ...link, description: editDescription }
           : link
@@ -144,26 +138,52 @@ export default function LinkList({ initialLinks }: LinkListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">
-          {showAll ? "모든 링크" : "상위 10개 링크"}
-        </h2>
-        <Button onClick={handleShowAll}>
-          {showAll ? "상위 10개만 보기" : "전체 보기"}
-        </Button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-2xl font-bold">링크 목록</h2>
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="slug, URL, 설명으로 검색..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+              onClick={() => setSearchQuery("")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
-      <DateRangeSelector
-        preset={dateRangePreset}
-        onPresetChange={setDateRangePreset}
-        customStartDate={customStartDate}
-        customEndDate={customEndDate}
-        onCustomStartDateChange={setCustomStartDate}
-        onCustomEndDateChange={setCustomEndDate}
-      />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <DateRangeSelector
+          preset={dateRangePreset}
+          onPresetChange={setDateRangePreset}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomStartDateChange={setCustomStartDate}
+          onCustomEndDateChange={setCustomEndDate}
+        />
+        <p className="text-sm text-muted-foreground">
+          {searchQuery
+            ? `검색 결과: ${filteredLinks.length}개`
+            : `전체: ${allLinks.length}개`}
+        </p>
+      </div>
 
-      <div className="grid gap-4">
-        {links.map((link) => (
+      {filteredLinks.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          {searchQuery ? "검색 결과가 없습니다." : "링크가 없습니다."}
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {filteredLinks.map((link) => (
           <Card
             key={link.id}
             className="border-none hover:bg-muted/50 dark:hover:bg-white/5 shadow-sm transition-all"
@@ -336,8 +356,9 @@ export default function LinkList({ initialLinks }: LinkListProps) {
               )}
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Add to Campaign Dialog */}
       {selectedLinkForCampaign && (

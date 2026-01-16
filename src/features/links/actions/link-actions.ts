@@ -65,7 +65,7 @@ export async function getLinkClickStats(
 
   let query = supabase
     .from("link_clicks")
-    .select("clicked_at")
+    .select("clicked_at, ip_address")
     .eq("link_id", linkId);
 
   // 날짜 범위 필터 적용
@@ -80,15 +80,28 @@ export async function getLinkClickStats(
 
   if (error) throw error;
 
-  // 클릭 데이터를 일별로 집계
-  const dailyStats = data.reduce((acc: { [key: string]: number }, click) => {
-    const date = new Date(click.clicked_at).toISOString().split("T")[0];
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {});
+  // 클릭 데이터를 일별로 집계 (클릭 수 + 고유 방문자 수)
+  const dailyStats = data.reduce(
+    (
+      acc: { [key: string]: { clicks: number; ips: Set<string> } },
+      click,
+    ) => {
+      const date = new Date(click.clicked_at).toISOString().split("T")[0];
+      if (!acc[date]) {
+        acc[date] = { clicks: 0, ips: new Set() };
+      }
+      acc[date].clicks += 1;
+      if (click.ip_address) {
+        acc[date].ips.add(click.ip_address);
+      }
+      return acc;
+    },
+    {},
+  );
 
-  return Object.entries(dailyStats).map(([date, clicks]) => ({
+  return Object.entries(dailyStats).map(([date, stats]) => ({
     date,
-    clicks,
+    clicks: stats.clicks,
+    uniqueVisitors: stats.ips.size,
   }));
 }
